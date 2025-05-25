@@ -3,43 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Golf Tournament Tee Times</title>
-  <!-- Tailwind CSS CDN -->
+  <title>2025 Pelican Hill Golf Tournament Tee Times</title>
+  <!-- Tailwind CSS CDN with custom colors -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'winsupply-blue': '#003087',
+            'winsupply-red': '#E31C25',
+            'winsupply-gray': '#6B7280',
+            'winsupply-light-gray': '#F5F5F5',
+          },
+          fontFamily: {
+            sans: ['Roboto', 'Open Sans', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
 </head>
-<body class="bg-gray-100 font-sans">
-  <nav class="bg-white shadow-md p-4">
-    <div class="container mx-auto flex justify-center space-x-4">
-      <a href="index.html" class="text-blue-600 hover:underline">Leaderboard</a>
-      <a href="tee-times.html" class="text-blue-600 hover:underline font-bold">Tee Times</a>
+<body class="bg-winsupply-light-gray font-sans">
+  <nav class="bg-white shadow-md sticky top-0 z-10">
+    <div class="container mx-auto px-4 py-3 flex justify-center space-x-6">
+      <a href="index.html" class="text-winsupply-blue hover:text-winsupply-red text-lg transition-colors duration-200">Leaderboard</a>
+      <a href="tee-times.html" class="text-winsupply-blue hover:text-winsupply-red font-bold text-lg transition-colors duration-200">Tee Times</a>
     </div>
   </nav>
-  <div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold text-center mb-6">2025 Golf Tournament Tee Times</h1>
-    <div id="tee-times" class="bg-white shadow-md rounded-lg p-4 overflow-x-auto">
-      <table class="w-full text-left">
-        <thead>
-          <tr class="bg-gray-200">
-            <th class="p-2">Date</th>
-            <th class="p-2">Course</th>
-            <th class="p-2">Tee Time</th>
-            <th class="p-2">Player 1</th>
-            <th class="p-2">Player 2</th>
-            <th class="p-2">Player 3</th>
-            <th class="p-2">Player 4</th>
-          </tr>
-        </thead>
-        <tbody id="tee-times-body"></tbody>
-      </table>
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-winsupply-blue text-center mb-8">2025 Pelican Hill Golf Tournament Tee Times</h1>
+    <div id="tee-times" class="bg-white shadow-lg rounded-lg overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-winsupply-gray">
+          <thead class="bg-winsupply-blue text-white">
+            <tr>
+              <th class="p-3 text-sm font-semibold">Date</th>
+              <th class="p-3 text-sm font-semibold">Course</th>
+              <th class="p-3 text-sm font-semibold">Tee Time</th>
+              <th class="p-3 text-sm font-semibold">Player 1</th>
+              <th class="p-3 text-sm font-semibold">Player 2</th>
+              <th class="p-3 text-sm font-semibold">Player 3</th>
+              <th class="p-3 text-sm font-semibold">Player 4</th>
+            </tr>
+          </thead>
+          <tbody id="tee-times-body" class="divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
     </div>
-    <p id="error" class="text-red-500 text-center mt-4 hidden">Error loading data. Please check your API key or sheet settings.</p>
+    <p id="error" class="text-winsupply-red text-center mt-4 hidden">Error loading data. Please check your API key or sheet settings.</p>
   </div>
 
   <script>
-    // Replace with your Google Sheet ID and API Key
-    const SHEET_ID = '16gC5ywABEN_2Qap_IlK6pcM_JDeLTp39YHURm8Q4GB8'; // e.g., '1xYz...'
-    const API_KEY = 'AIzaSyBNneyNevoaa-A8JUAmJOLquLilwVGmj3c'; // e.g., 'AIza...'
-    const RANGE = 'TeeTimes!A1:G'; // Updated range to include Course column
+    // Google Sheet ID and API Key
+    const SHEET_ID = '16gC5ywABEN_2Qap_IlK6pcM_JDeLTp39YHURm8Q4GB8';
+    const API_KEY = 'AIzaSyBNneyNevoaa-A8JUAmJOLquLilwVGmj3c'; // Replace with your actual API key
+    const RANGE = 'TeeTimes!A1:G'; // Confirmed sheet name 'TeeTimes'
 
     async function fetchSheetData() {
       try {
@@ -65,15 +84,15 @@
       for (let i = 1; i < data.length; i++) {
         const row = data[i];
         const tr = document.createElement('tr');
-        tr.className = 'border-t';
+        tr.className = 'hover:bg-winsupply-light-gray transition-colors';
         tr.innerHTML = `
-          <td class="p-2">${row[0] || ''}</td>
-          <td class="p-2">${row[1] || ''}</td>
-          <td class="p-2">${row[2] || ''}</td>
-          <td class="p-2">${row[3] || ''}</td>
-          <td class="p-2">${row[4] || ''}</td>
-          <td class="p-2">${row[5] || ''}</td>
-          <td class="p-2">${row[6] || ''}</td>
+          <td class="p-3 text-sm">${row[0] || ''}</td>
+          <td class="p-3 text-sm">${row[1] || ''}</td>
+          <td class="p-3 text-sm">${row[2] || ''}</td>
+          <td class="p-3 text-sm">${row[3] || ''}</td>
+          <td class="p-3 text-sm">${row[4] || ''}</td>
+          <td class="p-3 text-sm">${row[5] || ''}</td>
+          <td class="p-3 text-sm">${row[6] || ''}</td>
         `;
         tbody.appendChild(tr);
       }
