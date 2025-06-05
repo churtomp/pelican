@@ -23,10 +23,9 @@
             <th class="p-2 cursor-pointer" onclick="sortTable(0, 'string')">Player Name</th>
             <th class="p-2 cursor-pointer" onclick="sortTable(1, 'number')">Combined Score</th>
             <th class="p-2 cursor-pointer" onclick="sortTable(2, 'number')">Starting Quota</th>
-            <th class="p-2 cursor-pointer" onclick="sortTable(3, 'number')">Current Target Quota</th>
-            <th class="p-2 cursor-pointer" onclick="sortTable(4, 'number')">Round 1 Quota</th>
-            <th class="p-2 cursor-pointer" onclick="sortTable(5, 'number')">Round 2 Quota</th>
-            <th class="p-2 cursor-pointer" onclick="sortTable(6, 'number')">Round 3 Quota</th>
+            <th class="p-2 cursor-pointer" onclick="sortTable(3, 'number')">Round 1 Quota</th>
+            <th class="p-2 cursor-pointer" onclick="sortTable(4, 'number')">Round 2 Quota</th>
+            <th class="p-2 cursor-pointer" onclick="sortTable(5, 'number')">Round 3 Quota</th>
           </tr>
         </thead>
         <tbody id="leaderboard-body"></tbody>
@@ -52,7 +51,14 @@
         );
         const data = await response.json();
         if (data.values) {
-          leaderboardData = data.values.slice(1); // Skip header row
+          leaderboardData = data.values.slice(1).map(row => [
+            row[0], // Player Name
+            row[1], // Combined Score
+            row[2], // Starting Quota
+            row[4], // Round 1 Quota (skipping Current Target Quota at index 3)
+            row[5], // Round 2 Quota
+            row[6]  // Round 3 Quota
+          ]);
           displayLeaderboard();
         } else {
           document.getElementById('error').classList.remove('hidden');
@@ -102,7 +108,6 @@
           <td class="p-2">${row[3] || ''}</td>
           <td class="p-2">${row[4] || ''}</td>
           <td class="p-2">${row[5] || ''}</td>
-          <td class="p-2">${row[6] || ''}</td>
         `;
         tbody.appendChild(tr);
       });
