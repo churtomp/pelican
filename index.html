@@ -9,7 +9,17 @@
 </head>
 <body class="bg-gray-100 font-sans">
   <nav class="bg-white shadow-md p-4">
-    <div class="container mx-auto flex justify-center space-x-4">
+    <div class="container mx-auto flex justify-center items-center space-x-4">
+      <div class="relative">
+        <button id="navButton" class="text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-md focus:outline-none">Menu</button>
+        <div id="navDropdown" class="hidden absolute mt-2 w-48 bg-white shadow-lg rounded-md py-2 z-10">
+          <a href="index.html" class="block px-4 py-2 text-blue-600 hover:bg-blue-100">Leaderboard</a>
+          <a href="tee-times.html" class="block px-4 py-2 text-blue-600 hover:bg-blue-100">Tee Times</a>
+          <a href="day1-results.html" class="block px-4 py-2 text-blue-600 hover:bg-blue-100">Day 1 Results</a>
+          <a href="day2-results.html" class="block px-4 py-2 text-blue-600 hover:bg-blue-100">Day 2 Results</a>
+          <a href="day3-results.html" class="block px-4 py-2 text-blue-600 hover:bg-blue-100">Day 3 Results</a>
+        </div>
+      </div>
       <a href="index.html" class="text-blue-600 hover:underline font-bold">Leaderboard</a>
       <a href="tee-times.html" class="text-blue-600 hover:underline">Tee Times</a>
     </div>
@@ -30,6 +40,11 @@
         </thead>
         <tbody id="leaderboard-body"></tbody>
       </table>
+    </div>
+    <div class="flex justify-center space-x-4 mt-4">
+      <a href="day1-results.html" class="text-blue-600 hover:underline">Day 1 Results</a>
+      <a href="day2-results.html" class="text-blue-600 hover:underline">Day 2 Results</a>
+      <a href="day3-results.html" class="text-blue-600 hover:underline">Day 3 Results</a>
     </div>
     <p id="error" class="text-red-500 text-center mt-4 hidden">Error loading data. Please check your API key or sheet settings.</p>
   </div>
@@ -112,6 +127,21 @@
         tbody.appendChild(tr);
       });
     }
+
+    // Navigation dropdown toggle
+    document.getElementById('navButton').addEventListener('click', () => {
+      const dropdown = document.getElementById('navDropdown');
+      dropdown.classList.toggle('hidden');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (event) => {
+      const dropdown = document.getElementById('navDropdown');
+      const button = document.getElementById('navButton');
+      if (!button.contains(event.target) && !dropdown.contains(event.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
 
     // Fetch data on page load
     fetchSheetData();
