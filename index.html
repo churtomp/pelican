@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Golf Tournament Games/Payouts/Prizes</title>
+  <title>Golf Tournament Leaderboard</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -21,44 +21,118 @@
           <a href="day3-results.html" class="block px-4 py-2 text-blue-600 hover:bg-blue-100">Day 3 Results</a>
         </div>
       </div>
-      <a href="index.html" class="text-blue-600 hover:underline">Leaderboard</a>
+      <a href="index.html" class="text-blue-600 hover:underline font-bold">Leaderboard</a>
       <a href="tee-times.html" class="text-blue-600 hover:underline">Tee Times</a>
-      <a href="games-payouts-prizes.html" class="text-blue-600 hover:underline font-bold">Games/Payouts/Prizes</a>
+      <a href="games-payouts-prizes.html" class="text-blue-600 hover:underline">Games/Payouts/Prizes</a>
+      <a href="day1-results.html" class="text-blue-600 hover:underline">Day 1 Results</a>
+      <a href="day2-results.html" class="text-blue-600 hover:underline">Day 2 Results</a>
+      <a href="day3-results.html" class="text-blue-600 hover:underline">Day 3 Results</a>
     </div>
   </nav>
   <div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold text-center mb-6">2025 Golf Tournament Games/Payouts/Prizes</h1>
-    <div id="payouts" class="bg-white shadow-md rounded-lg p-4 overflow-x-auto">
+    <h1 class="text-3xl font-bold text-center mb-6">2025 Golf Tournament Leaderboard</h1>
+    <div id="leaderboard" class="bg-white shadow-md rounded-lg p-4 overflow-x-auto">
       <table class="w-full text-left">
         <thead>
           <tr class="bg-gray-200">
-            <th class="p-2">Game</th>
-            <th class="p-2">Winner</th>
-            <th class="p-2">Payout/Prize</th>
+            <th class="p-2 cursor-pointer" onclick="sortTable(0, 'string')">Player Name</th>
+            <th class="p-2 cursor-pointer" onclick="sortTable(1, 'number')">Combined Score</th>
+            <th class="p-2 cursor-pointer" onclick="sortTable(2, 'number')">Starting Quota</th>
+            <th class="p-2 cursor-pointer" onclick="sortTable(3, 'number')">Round 1 Quota</th>
+            <th class="p-2 cursor-pointer" onclick="sortTable(4, 'number')">Round 2 Quota</th>
+            <th class="p-2 cursor-pointer" onclick="sortTable(5, 'number')">Round 3 Quota</th>
           </tr>
         </thead>
-        <tbody>
-          <tr class="border-t">
-            <td class="p-2">Net Skins</td>
-            <td class="p-2">TBD</td>
-            <td class="p-2">$100</td>
-          </tr>
-          <tr class="border-t">
-            <td class="p-2">Low Net</td>
-            <td class="p-2">TBD</td>
-            <td class="p-2">$150</td>
-          </tr>
-          <tr class="border-t">
-            <td class="p-2">Closest to Pin</td>
-            <td class="p-2">TBD</td>
-            <td class="p-2">Golf Gear Set</td>
-          </tr>
-        </tbody>
+        <tbody id="leaderboard-body"></tbody>
       </table>
     </div>
+    <div class="flex justify-center space-x-4 mt-4">
+      <a href="day1-results.html" class="text-blue-600 hover:underline">Day 1 Results</a>
+      <a href="day2-results.html" class="text-blue-600 hover:underline">Day 2 Results</a>
+      <a href="day3-results.html" class="text-blue-600 hover:underline">Day 3 Results</a>
+    </div>
+    <p id="error" class="text-red-500 text-center mt-4 hidden">Error loading data. Please check your API key or sheet settings.</p>
   </div>
 
   <script>
+    // Google Sheet ID and API Key
+    const SHEET_ID = '16gC5ywABEN_2Qap_IlK6pcM_JDeLTp39YHURm8Q4GB8';
+    const API_KEY = 'AIzaSyBNneyNevoaa-A8JUAmJOLquLilwVGmj3c';
+    const RANGE = 'Sheet1!A1:G';
+
+    let leaderboardData = [];
+    let sortColumn = -1;
+    let sortDirection = 1; // 1 for ascending, -1 for descending
+
+    async function fetchSheetData() {
+      try {
+        const response = await fetch(
+          `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`
+        );
+        const data = await response.json();
+        if (data.values) {
+          leaderboardData = data.values.slice(1).map(row => [
+            row[0], // Player Name
+            row[1], // Combined Score
+            row[2], // Starting Quota
+            row[4], // Round 1 Quota (skipping Current Target Quota at index 3)
+            row[5], // Round 2 Quota
+            row[6]  // Round 3 Quota
+          ]);
+          displayLeaderboard();
+        } else {
+          document.getElementById('error').classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        document.getElementById('error').classList.remove('hidden');
+      }
+    }
+
+    function sortTable(column, type) {
+      if (sortColumn === column) {
+        sortDirection *= -1; // Toggle direction
+      } else {
+        sortColumn = column;
+        sortDirection = 1; // Default to ascending
+      }
+
+      leaderboardData.sort((a, b) => {
+        let valueA = a[column] || '';
+        let valueB = b[column] || '';
+
+        if (type === 'number') {
+          valueA = parseFloat(valueA) || 0;
+          valueB = parseFloat(valueB) || 0;
+          return (valueA - valueB) * sortDirection;
+        } else {
+          valueA = valueA.toString().toLowerCase();
+          valueB = valueB.toString().toLowerCase();
+          return valueA.localeCompare(valueB) * sortDirection;
+        }
+      });
+
+      displayLeaderboard();
+    }
+
+    function displayLeaderboard() {
+      const tbody = document.getElementById('leaderboard-body');
+      tbody.innerHTML = '';
+      leaderboardData.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-t';
+        tr.innerHTML = `
+          <td class="p-2">${row[0] || ''}</td>
+          <td class="p-2">${row[1] || ''}</td>
+          <td class="p-2">${row[2] || ''}</td>
+          <td class="p-2">${row[3] || ''}</td>
+          <td class="p-2">${row[4] || ''}</td>
+          <td class="p-2">${row[5] || ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
     // Navigation dropdown toggle
     document.getElementById('navButton').addEventListener('click', () => {
       const dropdown = document.getElementById('navDropdown');
@@ -73,6 +147,9 @@
         dropdown.classList.add('hidden');
       }
     });
+
+    // Fetch data on page load
+    fetchSheetData();
   </script>
 </body>
 </html>
