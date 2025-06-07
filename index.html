@@ -45,7 +45,6 @@
           return data.values ? data.values.slice(1).map(row => [
             row[0], // Player Name
             row[1], // Combined Score
-            row[2], // Starting Quota
             row[4], // Round 1 Quota
             row[5], // Round 2 Quota
             row[6]  // Round 3 Quota
@@ -58,10 +57,9 @@
                 <tr class="bg-gray-200">
                   <th class="p-2 cursor-pointer" onclick="sortTable('leaderboard', 0, 'string')">Player Name</th>
                   <th class="p-2 cursor-pointer" onclick="sortTable('leaderboard', 1, 'number')">Combined Score</th>
-                  <th class="p-2 cursor-pointer" onclick="sortTable('leaderboard', 2, 'number')">Starting Quota</th>
-                  <th class="p-2 cursor-pointer" onclick="sortTable('leaderboard', 3, 'number')">Round 1 Quota</th>
-                  <th class="p-2 cursor-pointer" onclick="sortTable('leaderboard', 4, 'number')">Round 2 Quota</th>
-                  <th class="p-2 cursor-pointer" onclick="sortTable('leaderboard', 5, 'number')">Round 3 Quota</th>
+                  <th class="p-2 cursor-pointer" onclick="sortTable('leaderboard', 2, 'number')">Round 1 Quota</th>
+                  <th class="p-2 cursor-pointer" onclick="sortTable('leaderboard', 3, 'number')">Round 2 Quota</th>
+                  <th class="p-2 cursor-pointer" onclick="sortTable('leaderboard', 4, 'number')">Round 3 Quota</th>
                 </tr>
               </thead>
               <tbody id="leaderboard-body">
@@ -72,7 +70,6 @@
                     <td class="p-2">${row[2] || ''}</td>
                     <td class="p-2">${row[3] || ''}</td>
                     <td class="p-2">${row[4] || ''}</td>
-                    <td class="p-2">${row[5] || ''}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -127,7 +124,6 @@
       'games-payouts-prizes': {
         title: '2025 Golf Tournament Games/Payouts/Prizes',
         fetchData: async () => {
-          // Static data for now; update with Google Sheet if needed
           return [
             ['Net Skins', 'TBD', '$100'],
             ['Low Net', 'TBD', '$150'],
