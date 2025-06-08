@@ -514,155 +514,232 @@
   }
 },
       'day2-results': {
-        title: '2025 Pelican Hill Extravaganza Day 2 Results',
-        fetchData: async () => {
-          try {
-            const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day2Scores!A4:X?key=${API_KEY}`);
-            const handicapResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day2Scores!A2:X2?key=${API_KEY}`);
-            const courseInfoResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day2Scores!A3:D3?key=${API_KEY}`);
-            
-            const data = await response.json();
-            const handicapData = await handicapResponse.json();
-            const courseInfoData = await courseInfoResponse.json();
+  title: '2025 Pelican Hill Extravaganza Day 2 Results',
+  fetchData: async () => {
+    try {
+      const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day2Scores!A4:X?key=${API_KEY}`);
+      const handicapResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day2Scores!A2:X2?key=${API_KEY}`);
+      const courseInfoResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day2Scores!A3:D3?key=${API_KEY}`);
+      
+      const data = await response.json();
+      const handicapData = await handicapResponse.json();
+      const courseInfoData = await courseInfoResponse.json();
 
-            return {
-              players: data.values ? data.values.map(row => ({
-                playerName: row[0] || '',
-                handicapIndex: parseFloat(row[1]) || 0,
-                courseHandicap: parseInt(row[2]) || 0,
-                holes: row.slice(3, 21).map(score => parseInt(score) || 0),
-                f9Total: parseInt(row[21]) || row.slice(3, 12).reduce((sum, score) => sum + parseInt(score || 0), 0),
-                b9Total: parseInt(row[22]) || row.slice(12, 21).reduce((sum, score) => sum + parseInt(score || 0), 0),
-                total: parseInt(row[23]) || row.slice(3, 21).reduce((sum, score) => sum + parseInt(score || 0), 0)
-              })) : [],
-              handicaps: handicapData.values ? handicapData.values[0].slice(3, 21).map(h => parseInt(h) || 0) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-              courseInfo: courseInfoData.values ? {
-                courseName: courseInfoData.values[0][0] || 'Pelican Hill - Ocean South',
-                teesPlayed: courseInfoData.values[0][3] || 'Blue',
-                rating: parseFloat(courseInfoData.values[0][1]) || 70.0,
-                slope: parseInt(courseInfoData.values[0][2]) || 130
-              } : { courseName: 'Pelican Hill - Ocean South', teesPlayed: 'Blue', rating: 70.0, slope: 130 }
-            };
-          } catch (error) {
-            console.error('Error fetching Day 2 data:', error);
-            return { players: [], handicaps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], courseInfo: { courseName: 'Pelican Hill - Ocean South', teesPlayed: 'Blue', rating: 70.0, slope: 130 } };
-          }
-        },
-        render: (data) => {
-          // Compute skins winners
-          const skins = Array(18).fill(null);
-          for (let hole = 0; hole < 18; hole++) {
-            const scores = data.players.map(player => player.holes[hole]).filter(score => score > 0);
-            if (scores.length > 0) {
-              const minScore = Math.min(...scores);
-              const scoreCounts = scores.reduce((acc, score) => ({ ...acc, [score]: (acc[score] || 0) + 1 }), {});
-              if (scoreCounts[minScore] === 1) {
-                const winnerIndex = data.players.findIndex(player => player.holes[hole] === minScore);
-                skins[hole] = winnerIndex;
-              }
-            }
-          }
-
-          return `
-            <section class="mb-8">
-              <h2 class="text-2xl font-bold mb-4">Course Information</h2>
-              <div class="bg-white shadow-md rounded-lg p-4">
-                <table class="w-full text-left">
-                  <tbody>
-                    <tr>
-                      <td class="p-2 font-medium">Course Name</td>
-                      <td class="p-2">${data.courseInfo.courseName}</td>
-                    </tr>
-                    <tr>
-                      <td class="p-2 font-medium">Tees Played</td>
-                      <td class="p-2">${data.courseInfo.teesPlayed}</td>
-                    </tr>
-                    <tr>
-                      <td class="p-2 font-medium">Rating</td>
-                      <td class="p-2">${data.courseInfo.rating.toFixed(1)}</td>
-                    </tr>
-                    <tr>
-                      <td class="p-2 font-medium">Slope</td>
-                      <td class="p-2">${data.courseInfo.slope}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-            <section class="mb-8">
-              <h2 class="text-2xl font-bold mb-4">Gross Score</h2>
-              <div id="gross-score" class="bg-white shadow-md rounded-lg p-4 overflow-x-auto">
-                <table class="w-full text-left">
-                  <thead>
-                    <tr class="bg-gray-300">
-                      <th class="p-2"></th>
-                      <th class="p-2"></th>
-                      <th class="p-2"></th>
-                      ${data.handicaps.slice(0, 9).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
-                      <th class="p-2"></th>
-                      ${data.handicaps.slice(9, 18).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
-                      <th class="p-2"></th>
-                      <th class="p-2"></th>
-                    </tr>
-                    <tr class="bg-gray-200">
-                      <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 0, 'string')">Player Name</th>
-                      <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 1, 'number')">Handicap Index</th>
-                      <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 2, 'number')">Course Handicap</th>
-                      <th class="p-2">Hole 1</th>
-                      <th class="p-2">Hole 2</th>
-                      <th class="p-2">Hole 3</th>
-                      <th class="p-2">Hole 4</th>
-                      <th class="p-2">Hole 5</th>
-                      <th class="p-2">Hole 6</th>
-                      <th class="p-2">Hole 7</th>
-                      <th class="p-2">Hole 8</th>
-                      <th class="p-2">Hole 9</th>
-                      <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 12, 'number')">F9 Total</th>
-                      <th class="p-2">Hole 10</th>
-                      <th class="p-2">Hole 11</th>
-                      <th class="p-2">Hole 12</th>
-                      <th class="p-2">Hole 13</th>
-                      <th class="p-2">Hole 14</th>
-                      <th class="p-2">Hole 15</th>
-                      <th class="p-2">Hole 16</th>
-                      <th class="p-2">Hole 17</th>
-                      <th class="p-2">Hole 18</th>
-                      <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 22, 'number')">B9 Total</th>
-                      <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 23, 'number')">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody id="day2-results-body">
-                    ${data.players.map((row, playerIndex) => `
-                      <tr class="border-t">
-                        <td class="p-2">${row.playerName}</td>
-                        <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
-                        <td class="p-2">${row.courseHandicap}</td>
-                        ${row.holes.slice(0, 9).map((score, holeIndex) => `
-                          <td class="p-2 ${skins[holeIndex] === playerIndex ? 'bg-green-200' : ''}">${score}</td>
-                        `).join('')}
-                        <td class="p-2">${row.f9Total}</td>
-                        ${row.holes.slice(9, 18).map((score, holeIndex) => `
-                          <td class="p-2 ${skins[holeIndex + 9] === playerIndex ? 'bg-green-200' : ''}">${score}</td>
-                        `).join('')}
-                        <td class="p-2">${row.b9Total}</td>
-                        <td class="p-2">${row.total}</td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-            <section class="mb-8">
-              <h2 class="text-2xl font-bold mb-4">Net Score</h2>
-              <p>Placeholder for Net Score table (gross scores adjusted by Course Handicap). Specify data source (e.g., 'Day2Scores!Y1:AA') or logic.</p>
-            </section>
-            <section class="mb-8">
-              <h2 class="text-2xl font-bold mb-4">Game Winners</h2>
-              <p>Placeholder for Daily Quota, Skins, Closest to Pin winners. Specify data source (e.g., 'Day2Winners!A1:C' for Game, Winner, Prize).</p>
-            </section>
-          `;
+      return {
+        players: data.values ? data.values.map(row => ({
+          playerName: row[0] || '',
+          handicapIndex: parseFloat(row[1]) || 0,
+          courseHandicap: parseInt(row[2]) || 0,
+          holes: row.slice(3, 21).map(score => parseInt(score) || 0),
+          f9Total: parseInt(row[21]) || row.slice(3, 12).reduce((sum, score) => sum + parseInt(score || 0), 0),
+          b9Total: parseInt(row[22]) || row.slice(12, 21).reduce((sum, score) => sum + parseInt(score || 0), 0),
+          total: parseInt(row[23]) || row.slice(3, 21).reduce((sum, score) => sum + parseInt(score || 0), 0)
+        })) : [],
+        handicaps: handicapData.values ? handicapData.values[0].slice(3, 21).map(h => parseInt(h) || 0) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+        courseInfo: courseInfoData.values ? {
+          courseName: courseInfoData.values[0][0] || 'Pelican Hill - Ocean South',
+          teesPlayed: data.values[0][3] || 'Blue',
+          rating: parseFloat(courseInfoData.values[0][1]) || 70.0,
+          slope: parseInt(courseInfoData.values[0][2]) || 130
+        } : { courseName: 'Pelican Hill - Ocean South', teesPlayed: 'Blue', rating: 70.0, slope: 130 }
+      };
+    } catch (error) {
+      console.error('Error fetching Day 2 data:', error);
+      return { players: [], handicaps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], courseInfo: { courseName: 'Pelican Hill - Ocean South', teesPlayed: 'Blue', rating: 70.0, slope: 130 } };
+    }
+  },
+  render: (data) => {
+    // Compute gross skins
+    const grossSkins = Array(18).fill(null);
+    for (let hole = 0; hole < 18; hole++) {
+      const scores = data.players.map(player => player.holes[hole]).filter(score => score > 0);
+      if (scores.length > 0) {
+        const minScore = Math.min(...scores);
+        const scoreCounts = scores.reduce((acc, score) => ({ ...acc, [score]: (acc[score] || 0) + 1 }), {});
+        if (scoreCounts[minScore] === 1) {
+          const winnerIndex = data.players.findIndex(player => player.holes[hole] === minScore);
+          grossSkins[hole] = winnerIndex;
         }
-      },
+      }
+    }
+
+    // Compute net scores and net skins
+    const netScores = data.players.map(player => {
+      const strokes = data.handicaps.map(hcp => player.courseHandicap >= hcp ? 1 : 0);
+      return player.holes.map((gross, i) => Math.max(0, gross - strokes[i]));
+    });
+    const netSkins = Array(18).fill(null);
+    for (let hole = 0; hole < 18; hole++) {
+      const scores = netScores.map(playerScores => playerScores[hole]).filter(score => score > 0);
+      if (scores.length > 0) {
+        const minScore = Math.min(...scores);
+        const scoreCounts = scores.reduce((acc, score) => ({ ...acc, [score]: (acc[score] || 0) + 1 }), {});
+        if (scoreCounts[minScore] === 1) {
+          const winnerIndex = netScores.findIndex(playerScores => playerScores[hole] === minScore);
+          netSkins[hole] = winnerIndex;
+        }
+      }
+    }
+
+    return `
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Course Information</h2>
+        <div class="bg-white shadow-md rounded-lg p-4">
+          <table class="w-full text-left">
+            <tbody>
+              <tr>
+                <td class="p-2 font-medium">Course Name</td>
+                <td class="p-2">${data.courseInfo.courseName}</td>
+              </tr>
+              <tr>
+                <td class="p-2 font-medium">Tees Played</td>
+                <td class="p-2">${data.courseInfo.teesPlayed}</td>
+              </tr>
+              <tr>
+                <td class="p-2 font-medium">Rating</td>
+                <td class="p-2">${data.courseInfo.rating.toFixed(1)}</td>
+              </tr>
+              <tr>
+                <td class="p-2 font-medium">Slope</td>
+                <td class="p-2">${data.courseInfo.slope}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Gross Score</h2>
+        <div id="gross-score" class="bg-white shadow-md rounded-lg p-4 overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="bg-gray-300">
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                ${data.handicaps.slice(0, 9).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
+                <th class="p-2"></th>
+                ${data.handicaps.slice(9, 18).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+              </tr>
+              <tr class="bg-gray-200">
+                <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 0, 'string')">Player Name</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 1, 'number')">Handicap Index</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 2, 'number')">Course Handicap</th>
+                <th class="p-2">Hole 1</th>
+                <th class="p-2">Hole 2</th>
+                <th class="p-2">Hole 3</th>
+                <th class="p-2">Hole 4</th>
+                <th class="p-2">Hole 5</th>
+                <th class="p-2">Hole 6</th>
+                <th class="p-2">Hole 7</th>
+                <th class="p-2">Hole 8</th>
+                <th class="p-2">Hole 9</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 12, 'number')">F9 Total</th>
+                <th class="p-2">Hole 10</th>
+                <th class="p-2">Hole 11</th>
+                <th class="p-2">Hole 12</th>
+                <th class="p-2">Hole 13</th>
+                <th class="p-2">Hole 14</th>
+                <th class="p-2">Hole 15</th>
+                <th class="p-2">Hole 16</th>
+                <th class="p-2">Hole 17</th>
+                <th class="p-2">Hole 18</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 22, 'number')">B9 Total</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 23, 'number')">Total</th>
+              </tr>
+            </thead>
+            <tbody id="day2-results-body">
+              ${data.players.map((row, playerIndex) => `
+                <tr class="border-t">
+                  <td class="p-2">${row.playerName}</td>
+                  <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
+                  <td class="p-2">${row.courseHandicap}</td>
+                  ${row.holes.slice(0, 9).map((score, holeIndex) => `
+                    <td class="p-2 ${grossSkins[holeIndex] === playerIndex ? 'bg-green-200' : ''}">${score}</td>
+                  `).join('')}
+                  <td class="p-2">${row.f9Total}</td>
+                  ${row.holes.slice(9, 18).map((score, holeIndex) => `
+                    <td class="p-2 ${grossSkins[holeIndex + 9] === playerIndex ? 'bg-green-200' : ''}">${score}</td>
+                  `).join('')}
+                  <td class="p-2">${row.b9Total}</td>
+                  <td class="p-2">${row.total}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Net Score</h2>
+        <div id="net-score" class="bg-white shadow-md rounded-lg p-4 overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="bg-gray-300">
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                ${data.handicaps.slice(0, 9).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
+                <th class="p-2"></th>
+                ${data.handicaps.slice(9, 18).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+              </tr>
+              <tr class="bg-gray-200">
+                <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 0, 'string')">Player Name</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 1, 'number')">Handicap Index</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 2, 'number')">Course Handicap</th>
+                <th class="p-2">Hole 1</th>
+                <th class="p-2">Hole 2</th>
+                <th class="p-2">Hole 3</th>
+                <th class="p-2">Hole 4</th>
+                <th class="p-2">Hole 5</th>
+                <th class="p-2">Hole 6</th>
+                <th class="p-2">Hole 7</th>
+                <th class="p-2">Hole 8</th>
+                <th class="p-2">Hole 9</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 12, 'number')">F9 Total</th>
+                <th class="p-2">Hole 10</th>
+                <th class="p-2">Hole 11</th>
+                <th class="p-2">Hole 12</th>
+                <th class="p-2">Hole 13</th>
+                <th class="p-2">Hole 14</th>
+                <th class="p-2">Hole 15</th>
+                <th class="p-2">Hole 16</th>
+                <th class="p-2">Hole 17</th>
+                <th class="p-2">Hole 18</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 22, 'number')">B9 Total</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day2-results', 23, 'number')">Total</th>
+              </tr>
+            </thead>
+            <tbody id="day2-results-net-body">
+              ${data.players.map((row, playerIndex) => `
+                <tr class="border-t">
+                  <td class="p-2">${row.playerName}</td>
+                  <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
+                  <td class="p-2">${row.courseHandicap}</td>
+                  ${netScores[playerIndex].slice(0, 9).map((score, holeIndex) => `
+                    <td class="p-2 ${netSkins[holeIndex] === playerIndex ? 'bg-green-200' : ''}">${score}</td>
+                  `).join('')}
+                  <td class="p-2">${netScores[playerIndex].slice(0, 9).reduce((sum, score) => sum + score, 0)}</td>
+                  ${netScores[playerIndex].slice(9, 18).map((score, holeIndex) => `
+                    <td class="p-2 ${netSkins[holeIndex + 9] === playerIndex ? 'bg-green-200' : ''}">${score}</td>
+                  `).join('')}
+                  <td class="p-2">${netScores[playerIndex].slice(9, 18).reduce((sum, score) => sum + score, 0)}</td>
+                  <td class="p-2">${netScores[playerIndex].reduce((sum, score) => sum + score, 0)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Game Winners</h2>
+        <p>Placeholder for Daily Quota, Skins, Closest to Pin winners. Specify data source (e.g., 'Day2Winners!A1:C' for Game, Winner, Prize).</p>
+      </section>
+    `;
+  }
+},
       'day3-results': {
         title: '2025 Pelican Hill Extravaganza Day 3 Results',
         fetchData: async () => {
