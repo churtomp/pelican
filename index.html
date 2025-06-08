@@ -565,6 +565,8 @@
                 ${data.handicaps.slice(9, 18).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
                 <th class="p-2"></th>
                 <th class="p-2"></th>
+                <th class="p-2"></th>
+                <th class="p-2"></th>
               </tr>
               <tr class="bg-gray-200">
                 <th class="p-2"></th>
@@ -575,6 +577,8 @@
                 ${data.parValues.slice(9, 18).map(p => `<th class="p-2 text-center">Par ${p}</th>`).join('')}
                 <th class="p-2 text-center">Par ${b9TotalPar}</th>
                 <th class="p-2 text-center">Par ${totalPar}</th>
+                <th class="p-2"></th>
+                <th class="p-2"></th>
               </tr>
               <tr class="bg-gray-200">
                 <th class="p-2 cursor-pointer" onclick="sortTable('day1-results', 0, 'string')">Player Name</th>
@@ -601,25 +605,34 @@
                 <th class="p-2">Hole 18</th>
                 <th class="p-2 cursor-pointer" onclick="sortTable('day1-results', 22, 'number')">B9 Total</th>
                 <th class="p-2 cursor-pointer" onclick="sortTable('day1-results', 23, 'number')">Total</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day1-results', 24, 'number')">Target Quota</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day1-results', 25, 'number')">Quota Score</th>
               </tr>
             </thead>
             <tbody id="day1-results-quota-body">
-              ${data.players.map((row, playerIndex) => `
-                <tr class="border-t">
-                  <td class="p-2">${row.playerName}</td>
-                  <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
-                  <td class="p-2">${row.courseHandicap}</td>
-                  ${quotaPoints[playerIndex].slice(0, 9).map(points => `
-                    <td class="p-2">${points}</td>
-                  `).join('')}
-                  <td class="p-2">${quotaPoints[playerIndex].slice(0, 9).reduce((sum, points) => sum + points, 0)}</td>
-                  ${quotaPoints[playerIndex].slice(9, 18).map(points => `
-                    <td class="p-2">${points}</td>
-                  `).join('')}
-                  <td class="p-2">${quotaPoints[playerIndex].slice(9, 18).reduce((sum, points) => sum + points, 0)}</td>
-                  <td class="p-2">${quotaPoints[playerIndex].reduce((sum, points) => sum + points, 0)}</td>
-                </tr>
-              `).join('')}
+              ${data.players.map((row, playerIndex) => {
+                const targetQuota = (36 - row.handicapIndex).toFixed(1);
+                const totalQuotaPoints = quotaPoints[playerIndex].reduce((sum, points) => sum + points, 0);
+                const quotaScore = (totalQuotaPoints - parseFloat(targetQuota)).toFixed(1);
+                return `
+                  <tr class="border-t">
+                    <td class="p-2">${row.playerName}</td>
+                    <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
+                    <td class="p-2">${row.courseHandicap}</td>
+                    ${quotaPoints[playerIndex].slice(0, 9).map(points => `
+                      <td class="p-2">${points}</td>
+                    `).join('')}
+                    <td class="p-2">${quotaPoints[playerIndex].slice(0, 9).reduce((sum, points) => sum + points, 0)}</td>
+                    ${quotaPoints[playerIndex].slice(9, 18).map(points => `
+                      <td class="p-2">${points}</td>
+                    `).join('')}
+                    <td class="p-2">${quotaPoints[playerIndex].slice(9, 18).reduce((sum, points) => sum + points, 0)}</td>
+                    <td class="p-2">${totalQuotaPoints}</td>
+                    <td class="p-2">${targetQuota}</td>
+                    <td class="p-2">${quotaScore}</td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
         </div>
