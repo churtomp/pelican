@@ -806,7 +806,7 @@
     `;
   }
 },
-     'day3-results': {
+    'day3-results': {
   title: '2025 Pelican Hill Extravaganza Day 3 Results',
   fetchData: async () => {
     try {
@@ -831,7 +831,7 @@
           total: parseInt(row[23]) || row.slice(3, 21).reduce((sum, score) => sum + parseInt(score || 0), 0)
         })) : [],
         handicaps: handicapData.values ? handicapData.values[0].slice(3, 21).map(h => parseInt(h) || 0) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-        parValues: parData.values ? parData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5], // Fallback par values
+        parValues: parData.values ? parData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5],
         courseInfo: courseInfoData.values ? {
           courseName: courseInfoData.values[0][0] || 'Pelican Hill - Ocean North',
           teesPlayed: courseInfoData.values[0][3] || 'Blue',
@@ -882,6 +882,11 @@
       }
     }
 
+    // Compute total par values
+    const f9TotalPar = data.parValues.slice(0, 9).reduce((sum, p) => sum + p, 0);
+    const b9TotalPar = data.parValues.slice(9, 18).reduce((sum, p) => sum + p, 0);
+    const totalPar = data.parValues.reduce((sum, p) => sum + p, 0);
+
     return `
       <section class="mb-8">
         <h2 class="text-2xl font-bold mb-4">Course Information</h2>
@@ -928,10 +933,10 @@
                 <th class="p-2"></th>
                 <th class="p-2"></th>
                 ${data.parValues.slice(0, 9).map(p => `<th class="p-2 text-center">Par ${p}</th>`).join('')}
-                <th class="p-2"></th>
+                <th class="p-2 text-center">Par ${f9TotalPar}</th>
                 ${data.parValues.slice(9, 18).map(p => `<th class="p-2 text-center">Par ${p}</th>`).join('')}
-                <th class="p-2"></th>
-                <th class="p-2"></th>
+                <th class="p-2 text-center">Par ${b9TotalPar}</th>
+                <th class="p-2 text-center">Par ${totalPar}</th>
               </tr>
               <tr class="bg-gray-200">
                 <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 0, 'string')">Player Name</th>
@@ -1001,10 +1006,10 @@
                 <th class="p-2"></th>
                 <th class="p-2"></th>
                 ${data.parValues.slice(0, 9).map(p => `<th class="p-2 text-center">Par ${p}</th>`).join('')}
-                <th class="p-2"></th>
+                <th class="p-2 text-center">Par ${f9TotalPar}</th>
                 ${data.parValues.slice(9, 18).map(p => `<th class="p-2 text-center">Par ${p}</th>`).join('')}
-                <th class="p-2"></th>
-                <th class="p-2"></th>
+                <th class="p-2 text-center">Par ${b9TotalPar}</th>
+                <th class="p-2 text-center">Par ${totalPar}</th>
               </tr>
               <tr class="bg-gray-200">
                 <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 0, 'string')">Player Name</th>
