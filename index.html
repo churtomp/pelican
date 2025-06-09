@@ -665,35 +665,70 @@
       const day1Data = await day1Response.json();
       const day1ParData = await day1ParResponse.json();
 
+      const day1ParValues = day1ParData.values ? day1ParData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5];
+      const day2ParValues = parData.values ? parData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5];
+
+      // Process Day 1 players and compute quota points
       const day1Players = day1Data.values ? day1Data.values.map(row => ({
         playerName: row[0] || '',
         handicapIndex: parseFloat(row[1]) || 0,
         holes: row.slice(3, 21).map(score => parseInt(score) || 0)
       })) : [];
-      const day1ParValues = day1ParData.values ? day1ParData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5];
 
-      return {
-        players: data.values ? data.values.map(row => ({
+      const day1QuotaPoints = day1Players.map(player => {
+        return player.holes.map((gross, i) => {
+          const diff = gross - day1ParValues[i];
+          if (diff <= -2) return 8; // Eagle
+          if (diff === -1) return 4; // Birdie
+          if (diff === 0) return 2; // Par
+          if (diff === 1) return 1; // Bogey
+          return 0; // Double Bogey+
+        });
+      });
+
+      // Process Day 2 players and compute quota points
+      const day2Players = data.values ? data.values.map((row, index) => {
+        const holes = row.slice(3, 21).map(score => parseInt(score) || 0);
+        const quotaPoints = holes.map((gross, i) => {
+          const diff = gross - day2ParValues[i];
+          if (diff <= -2) return 8; // Eagle
+          if (diff === -1) return 4; // Birdie
+          if (diff === 0) return 2; // Par
+          if (diff === 1) return 1; // Bogey
+          return 0; // Double Bogey+
+        });
+        const totalQuotaPoints = quotaPoints.reduce((sum, points) => sum + points, 0);
+        const day1Player = day1Players[index] || { handicapIndex: 0, holes: Array(18).fill(0) };
+        const day1QuotaPointsTotal = day1QuotaPoints[index] ? day1QuotaPoints[index].reduce((sum, points) => sum + points, 0) : 0;
+        const day1TargetQuota = 36 - day1Player.handicapIndex;
+        const day1QuotaScore = day1QuotaPointsTotal - day1TargetQuota;
+        const day2TargetQuota = (day1TargetQuota + (day1QuotaScore / 2)).toFixed(1);
+        const day2QuotaScore = (totalQuotaPoints - parseFloat(day2TargetQuota)).toFixed(1);
+
+        return {
           playerName: row[0] || '',
           handicapIndex: parseFloat(row[1]) || 0,
           courseHandicap: parseInt(row[2]) || 0,
-          holes: row.slice(3, 21).map(score => parseInt(score) || 0),
-          f9Total: parseInt(row[21]) || row.slice(3, 12).reduce((sum, score) => sum + parseInt(score || 0), 0),
-          b9Total: parseInt(row[22]) || row.slice(12, 21).reduce((sum, score) => sum + parseInt(score || 0), 0),
-          total: parseInt(row[23]) || row.slice(3, 21).reduce((sum, score) => sum + parseInt(score || 0), 0)
-        })) : [],
+          holes,
+          f9Total: parseInt(row[21]) || holes.slice(0, 9).reduce((sum, score) => sum + parseInt(score || 0), 0),
+          b9Total: parseInt(row[22]) || holes.slice(9, 18).reduce((sum, score) => sum + parseInt(score || 0), 0),
+          total: parseInt(row[23]) || holes.reduce((sum, score) => sum + parseInt(score || 0), 0),
+          quotaPoints,
+          targetQuota: day2TargetQuota,
+          quotaScore: day2QuotaScore
+        };
+      }) : [];
+
+      return {
+        players: day2Players,
         handicaps: handicapData.values ? handicapData.values[0].slice(3, 21).map(h => parseInt(h) || 0) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-        parValues: parData.values ? parData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5],
+        parValues: day2ParValues,
         courseInfo: courseInfoData.values ? {
           courseName: courseInfoData.values[0][0] || 'Pelican Hill - Ocean South',
           teesPlayed: courseInfoData.values[0][3] || 'Blue',
           rating: parseFloat(courseInfoData.values[0][1]) || 70.0,
           slope: parseInt(courseInfoData.values[0][2]) || 130
-        } : { courseName: 'Pelican Hill - Ocean South', teesPlayed: 'Blue', rating: 70.0, slope: 130 },
-        day1Data: {
-          players: day1Players,
-          parValues: day1ParValues
-        }
+        } : { courseName: 'Pelican Hill - Ocean South', teesPlayed: 'Blue', rating: 70.0, slope: 130 }
       };
     } catch (error) {
       console.error('Error fetching Day 2 data:', error);
@@ -701,8 +736,7 @@
         players: [],
         handicaps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
         parValues: [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5],
-        courseInfo: { courseName: 'Pelican Hill - Ocean South', teesPlayed: 'Blue', rating: 70.0, slope: 130 },
-        day1Data: { players: [], parValues: [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5] }
+        courseInfo: { courseName: 'Pelican Hill - Ocean South', teesPlayed: 'Blue', rating: 70.0, slope: 130 }
       };
     }
   },
@@ -743,30 +777,6 @@
     const f9TotalPar = data.parValues.slice(0, 9).reduce((sum, p) => sum + p, 0);
     const b9TotalPar = data.parValues.slice(9, 18).reduce((sum, p) => sum + p, 0);
     const totalPar = data.parValues.reduce((sum, p) => sum + p, 0);
-
-    // Compute Day 2 quota points
-    const quotaPoints = data.players.map(player => {
-      return player.holes.map((gross, i) => {
-        const diff = gross - data.parValues[i];
-        if (diff <= -2) return 8; // Eagle
-        if (diff === -1) return 4; // Birdie
-        if (diff === 0) return 2; // Par
-        if (diff === 1) return 1; // Bogey
-        return 0; // Double Bogey+
-      });
-    });
-
-    // Compute Day 1 quota points for Target Quota calculation
-    const day1QuotaPoints = data.day1Data.players.map(player => {
-      return player.holes.map((gross, i) => {
-        const diff = gross - data.day1Data.parValues[i];
-        if (diff <= -2) return 8; // Eagle
-        if (diff === -1) return 4; // Birdie
-        if (diff === 0) return 2; // Par
-        if (diff === 1) return 1; // Bogey
-        return 0; // Double Bogey+
-      });
-    });
 
     return `
       <section class="mb-8">
@@ -999,35 +1009,24 @@
               </tr>
             </thead>
             <tbody id="day2-results-quota-body">
-              ${data.players.map((row, playerIndex) => {
-                // Find corresponding Day 1 player (assuming same order)
-                const day1Player = data.day1Data.players[playerIndex] || { handicapIndex: 0, holes: Array(18).fill(0) };
-                const day1QuotaPointsTotal = day1QuotaPoints[playerIndex] ? day1QuotaPoints[playerIndex].reduce((sum, points) => sum + points, 0) : 0;
-                const day1TargetQuota = 36 - day1Player.handicapIndex;
-                const day1QuotaScore = day1QuotaPointsTotal - day1TargetQuota;
-                const day2TargetQuota = (day1TargetQuota + (day1QuotaScore / 2)).toFixed(1);
-                const day2TotalQuotaPoints = quotaPoints[playerIndex].reduce((sum, points) => sum + points, 0);
-                const day2QuotaScore = (day2TotalQuotaPoints - parseFloat(day2TargetQuota)).toFixed(1);
-
-                return `
-                  <tr class="border-t">
-                    <td class="p-2">${row.playerName}</td>
-                    <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
-                    <td class="p-2">${row.courseHandicap}</td>
-                    ${quotaPoints[playerIndex].slice(0, 9).map(points => `
-                      <td class="p-2">${points}</td>
-                    `).join('')}
-                    <td class="p-2">${quotaPoints[playerIndex].slice(0, 9).reduce((sum, points) => sum + points, 0)}</td>
-                    ${quotaPoints[playerIndex].slice(9, 18).map(points => `
-                      <td class="p-2">${points}</td>
-                    `).join('')}
-                    <td class="p-2">${quotaPoints[playerIndex].slice(9, 18).reduce((sum, points) => sum + points, 0)}</td>
-                    <td class="p-2">${day2TotalQuotaPoints}</td>
-                    <td class="p-2">${day2TargetQuota}</td>
-                    <td class="p-2">${day2QuotaScore}</td>
-                  </tr>
-                `;
-              }).join('')}
+              ${data.players.map((row, playerIndex) => `
+                <tr class="border-t">
+                  <td class="p-2">${row.playerName}</td>
+                  <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
+                  <td class="p-2">${row.courseHandicap}</td>
+                  ${row.quotaPoints.slice(0, 9).map(points => `
+                    <td class="p-2">${points}</td>
+                  `).join('')}
+                  <td class="p-2">${row.quotaPoints.slice(0, 9).reduce((sum, points) => sum + points, 0)}</td>
+                  ${row.quotaPoints.slice(9, 18).map(points => `
+                    <td class="p-2">${points}</td>
+                  `).join('')}
+                  <td class="p-2">${row.quotaPoints.slice(9, 18).reduce((sum, points) => sum + points, 0)}</td>
+                  <td class="p-2">${row.quotaPoints.reduce((sum, points) => sum + points, 0)}</td>
+                  <td class="p-2">${row.targetQuota}</td>
+                  <td class="p-2">${row.quotaScore}</td>
+                </tr>
+              `).join('')}
             </tbody>
           </table>
         </div>
@@ -1066,46 +1065,97 @@
       const day1Data = await day1Response.json();
       const day1ParData = await day1ParResponse.json();
 
+      const day1ParValues = day1ParData.values ? day1ParData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5];
+      const day2ParValues = day2ParData.values ? day2ParData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5];
+      const day3ParValues = parData.values ? parData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5];
+
+      // Process Day 1 players and compute quota points
       const day1Players = day1Data.values ? day1Data.values.map(row => ({
         playerName: row[0] || '',
         handicapIndex: parseFloat(row[1]) || 0,
         holes: row.slice(3, 21).map(score => parseInt(score) || 0)
       })) : [];
-      const day1ParValues = day1ParData.values ? day1ParData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5];
 
-      const day2Players = day2Data.values ? day2Data.values.map(row => ({
-        playerName: row[0] || '',
-        handicapIndex: parseFloat(row[1]) || 0,
-        holes: row.slice(3, 21).map(score => parseInt(score) || 0)
-      })) : [];
-      const day2ParValues = day2ParData.values ? day2ParData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5];
+      const day1QuotaPoints = day1Players.map(player => {
+        return player.holes.map((gross, i) => {
+          const diff = gross - day1ParValues[i];
+          if (diff <= -2) return 8; // Eagle
+          if (diff === -1) return 4; // Birdie
+          if (diff === 0) return 2; // Par
+          if (diff === 1) return 1; // Bogey
+          return 0; // Double Bogey+
+        });
+      });
 
-      return {
-        players: data.values ? data.values.map(row => ({
+      // Process Day 2 players and compute quota points
+      const day2Players = day2Data.values ? day2Data.values.map((row, index) => {
+        const holes = row.slice(3, 21).map(score => parseInt(score) || 0);
+        const quotaPoints = holes.map((gross, i) => {
+          const diff = gross - day2ParValues[i];
+          if (diff <= -2) return 8; // Eagle
+          if (diff === -1) return 4; // Birdie
+          if (diff === 0) return 2; // Par
+          if (diff === 1) return 1; // Bogey
+          return 0; // Double Bogey+
+        });
+        const totalQuotaPoints = quotaPoints.reduce((sum, points) => sum + points, 0);
+        const day1Player = day1Players[index] || { handicapIndex: 0, holes: Array(18).fill(0) };
+        const day1QuotaPointsTotal = day1QuotaPoints[index] ? day1QuotaPoints[index].reduce((sum, points) => sum + points, 0) : 0;
+        const day1TargetQuota = 36 - day1Player.handicapIndex;
+        const day1QuotaScore = day1QuotaPointsTotal - day1TargetQuota;
+        const day2TargetQuota = (day1TargetQuota + (day1QuotaScore / 2)).toFixed(1);
+        const day2QuotaScore = (totalQuotaPoints - parseFloat(day2TargetQuota)).toFixed(1);
+
+        return {
+          playerName: row[0] || '',
+          handicapIndex: parseFloat(row[1]) || 0,
+          holes,
+          quotaPoints,
+          targetQuota: day2TargetQuota,
+          quotaScore: day2QuotaScore
+        };
+      }) : [];
+
+      // Process Day 3 players and compute quota points
+      const day3Players = data.values ? data.values.map((row, index) => {
+        const holes = row.slice(3, 21).map(score => parseInt(score) || 0);
+        const quotaPoints = holes.map((gross, i) => {
+          const diff = gross - day3ParValues[i];
+          if (diff <= -2) return 8; // Eagle
+          if (diff === -1) return 4; // Birdie
+          if (diff === 0) return 2; // Par
+          if (diff === 1) return 1; // Bogey
+          return 0; // Double Bogey+
+        });
+        const totalQuotaPoints = quotaPoints.reduce((sum, points) => sum + points, 0);
+        const day2Player = day2Players[index] || { targetQuota: '0.0', quotaScore: '0.0' };
+        const day3TargetQuota = (parseFloat(day2Player.targetQuota) + (parseFloat(day2Player.quotaScore) / 2)).toFixed(1);
+        const day3QuotaScore = (totalQuotaPoints - parseFloat(day3TargetQuota)).toFixed(1);
+
+        return {
           playerName: row[0] || '',
           handicapIndex: parseFloat(row[1]) || 0,
           courseHandicap: parseInt(row[2]) || 0,
-          holes: row.slice(3, 21).map(score => parseInt(score) || 0),
-          f9Total: parseInt(row[21]) || row.slice(3, 12).reduce((sum, score) => sum + parseInt(score || 0), 0),
-          b9Total: parseInt(row[22]) || row.slice(12, 21).reduce((sum, score) => sum + parseInt(score || 0), 0),
-          total: parseInt(row[23]) || row.slice(3, 21).reduce((sum, score) => sum + parseInt(score || 0), 0)
-        })) : [],
+          holes,
+          f9Total: parseInt(row[21]) || holes.slice(0, 9).reduce((sum, score) => sum + parseInt(score || 0), 0),
+          b9Total: parseInt(row[22]) || holes.slice(9, 18).reduce((sum, score) => sum + parseInt(score || 0), 0),
+          total: parseInt(row[23]) || holes.reduce((sum, score) => sum + parseInt(score || 0), 0),
+          quotaPoints,
+          targetQuota: day3TargetQuota,
+          quotaScore: day3QuotaScore
+        };
+      }) : [];
+
+      return {
+        players: day3Players,
         handicaps: handicapData.values ? handicapData.values[0].slice(3, 21).map(h => parseInt(h) || 0) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-        parValues: parData.values ? parData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5],
+        parValues: day3ParValues,
         courseInfo: courseInfoData.values ? {
           courseName: courseInfoData.values[0][0] || 'Pelican Hill - Ocean North',
           teesPlayed: courseInfoData.values[0][3] || 'Blue',
           rating: parseFloat(courseInfoData.values[0][1]) || 72.5,
           slope: parseInt(courseInfoData.values[0][2]) || 135
-        } : { courseName: 'Pelican Hill - Ocean North', teesPlayed: 'Blue', rating: 72.5, slope: 135 },
-        day1Data: {
-          players: day1Players,
-          parValues: day1ParValues
-        },
-        day2Data: {
-          players: day2Players,
-          parValues: day2ParValues
-        }
+        } : { courseName: 'Pelican Hill - Ocean North', teesPlayed: 'Blue', rating: 72.5, slope: 135 }
       };
     } catch (error) {
       console.error('Error fetching Day 3 data:', error);
@@ -1113,9 +1163,7 @@
         players: [],
         handicaps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
         parValues: [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5],
-        courseInfo: { courseName: 'Pelican Hill - Ocean North', teesPlayed: 'Blue', rating: 72.5, slope: 135 },
-        day1Data: { players: [], parValues: [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5] },
-        day2Data: { players: [], parValues: [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5] }
+        courseInfo: { courseName: 'Pelican Hill - Ocean North', teesPlayed: 'Blue', rating: 72.5, slope: 135 }
       };
     }
   },
@@ -1156,42 +1204,6 @@
     const f9TotalPar = data.parValues.slice(0, 9).reduce((sum, p) => sum + p, 0);
     const b9TotalPar = data.parValues.slice(9, 18).reduce((sum, p) => sum + p, 0);
     const totalPar = data.parValues.reduce((sum, p) => sum + p, 0);
-
-    // Compute Day 3 quota points
-    const quotaPoints = data.players.map(player => {
-      return player.holes.map((gross, i) => {
-        const diff = gross - data.parValues[i];
-        if (diff <= -2) return 8; // Eagle
-        if (diff === -1) return 4; // Birdie
-        if (diff === 0) return 2; // Par
-        if (diff === 1) return 1; // Bogey
-        return 0; // Double Bogey+
-      });
-    });
-
-    // Compute Day 1 quota points for Day 2 Target Quota
-    const day1QuotaPoints = data.day1Data.players.map(player => {
-      return player.holes.map((gross, i) => {
-        const diff = gross - data.day1Data.parValues[i];
-        if (diff <= -2) return 8; // Eagle
-        if (diff === -1) return 4; // Birdie
-        if (diff === 0) return 2; // Par
-        if (diff === 1) return 1; // Bogey
-        return 0; // Double Bogey+
-      });
-    });
-
-    // Compute Day 2 quota points for Day 3 Target Quota
-    const day2QuotaPoints = data.day2Data.players.map(player => {
-      return player.holes.map((gross, i) => {
-        const diff = gross - data.day2Data.parValues[i];
-        if (diff <= -2) return 8; // Eagle
-        if (diff === -1) return 4; // Birdie
-        if (diff === 0) return 2; // Par
-        if (diff === 1) return 1; // Bogey
-        return 0; // Double Bogey+
-      });
-    });
 
     return `
       <section class="mb-8">
@@ -1424,45 +1436,24 @@
               </tr>
             </thead>
             <tbody id="day3-results-quota-body">
-              ${data.players.map((row, playerIndex) => {
-                // Find corresponding Day 1 and Day 2 players (assuming same order)
-                const day1Player = data.day1Data.players[playerIndex] || { handicapIndex: 0, holes: Array(18).fill(0) };
-                const day2Player = data.day2Data.players[playerIndex] || { handicapIndex: 0, holes: Array(18).fill(0) };
-                
-                // Calculate Day 1 Target Quota and Quota Score
-                const day1QuotaPointsTotal = day1QuotaPoints[playerIndex] ? day1QuotaPoints[playerIndex].reduce((sum, points) => sum + points, 0) : 0;
-                const day1TargetQuota = 36 - day1Player.handicapIndex;
-                const day1QuotaScore = day1QuotaPointsTotal - day1TargetQuota;
-                
-                // Calculate Day 2 Target Quota and Quota Score
-                const day2QuotaPointsTotal = day2QuotaPoints[playerIndex] ? day2QuotaPoints[playerIndex].reduce((sum, points) => sum + points, 0) : 0;
-                const day2TargetQuota = day1TargetQuota + (day1QuotaScore / 2);
-                const day2QuotaScore = day2QuotaPointsTotal - day2TargetQuota;
-                
-                // Calculate Day 3 Target Quota and Quota Score
-                const day3TargetQuota = (day2TargetQuota + (day2QuotaScore / 2)).toFixed(1);
-                const day3TotalQuotaPoints = quotaPoints[playerIndex].reduce((sum, points) => sum + points, 0);
-                const day3QuotaScore = (day3TotalQuotaPoints - parseFloat(day3TargetQuota)).toFixed(1);
-
-                return `
-                  <tr class="border-t">
-                    <td class="p-2">${row.playerName}</td>
-                    <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
-                    <td class="p-2">${row.courseHandicap}</td>
-                    ${quotaPoints[playerIndex].slice(0, 9).map(points => `
-                      <td class="p-2">${points}</td>
-                    `).join('')}
-                    <td class="p-2">${quotaPoints[playerIndex].slice(0, 9).reduce((sum, points) => sum + points, 0)}</td>
-                    ${quotaPoints[playerIndex].slice(9, 18).map(points => `
-                      <td class="p-2">${points}</td>
-                    `).join('')}
-                    <td class="p-2">${quotaPoints[playerIndex].slice(9, 18).reduce((sum, points) => sum + points, 0)}</td>
-                    <td class="p-2">${day3TotalQuotaPoints}</td>
-                    <td class="p-2">${day3TargetQuota}</td>
-                    <td class="p-2">${day3QuotaScore}</td>
-                  </tr>
-                `;
-              }).join('')}
+              ${data.players.map((row, playerIndex) => `
+                <tr class="border-t">
+                  <td class="p-2">${row.playerName}</td>
+                  <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
+                  <td class="p-2">${row.courseHandicap}</td>
+                  ${row.quotaPoints.slice(0, 9).map(points => `
+                    <td class="p-2">${points}</td>
+                  `).join('')}
+                  <td class="p-2">${row.quotaPoints.slice(0, 9).reduce((sum, points) => sum + points, 0)}</td>
+                  ${row.quotaPoints.slice(9, 18).map(points => `
+                    <td class="p-2">${points}</td>
+                  `).join('')}
+                  <td class="p-2">${row.quotaPoints.slice(9, 18).reduce((sum, points) => sum + points, 0)}</td>
+                  <td class="p-2">${row.quotaPoints.reduce((sum, points) => sum + points, 0)}</td>
+                  <td class="p-2">${row.targetQuota}</td>
+                  <td class="p-2">${row.quotaScore}</td>
+                </tr>
+              `).join('')}
             </tbody>
           </table>
         </div>
