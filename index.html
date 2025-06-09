@@ -644,7 +644,7 @@
     `;
   }
 },
-    'day2-results': {
+'day2-results': {
   title: '2025 Pelican Hill Extravaganza Day 2 Results',
   fetchData: async () => {
     try {
@@ -1005,7 +1005,7 @@
                 const day1QuotaPointsTotal = day1QuotaPoints[playerIndex] ? day1QuotaPoints[playerIndex].reduce((sum, points) => sum + points, 0) : 0;
                 const day1TargetQuota = 36 - day1Player.handicapIndex;
                 const day1QuotaScore = day1QuotaPointsTotal - day1TargetQuota;
-                const day2TargetQuota = (day1TargetQuota - (day1QuotaScore / 2)).toFixed(1);
+                const day2TargetQuota = (day1TargetQuota + (day1QuotaScore / 2)).toFixed(1);
                 const day2TotalQuotaPoints = quotaPoints[playerIndex].reduce((sum, points) => sum + points, 0);
                 const day2QuotaScore = (day2TotalQuotaPoints - parseFloat(day2TargetQuota)).toFixed(1);
 
