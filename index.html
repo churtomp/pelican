@@ -1039,7 +1039,7 @@
     `;
   }
 },
-  'day3-results': {
+'day3-results': {
   title: '2025 Pelican Hill Extravaganza Day 3 Results',
   fetchData: async () => {
     try {
@@ -1436,11 +1436,11 @@
                 
                 // Calculate Day 2 Target Quota and Quota Score
                 const day2QuotaPointsTotal = day2QuotaPoints[playerIndex] ? day2QuotaPoints[playerIndex].reduce((sum, points) => sum + points, 0) : 0;
-                const day2TargetQuota = day1TargetQuota - (day1QuotaScore / 2);
+                const day2TargetQuota = day1TargetQuota + (day1QuotaScore / 2);
                 const day2QuotaScore = day2QuotaPointsTotal - day2TargetQuota;
                 
                 // Calculate Day 3 Target Quota and Quota Score
-                const day3TargetQuota = (day2TargetQuota - (day2QuotaScore / 2)).toFixed(1);
+                const day3TargetQuota = (day2TargetQuota + (day2QuotaScore / 2)).toFixed(1);
                 const day3TotalQuotaPoints = quotaPoints[playerIndex].reduce((sum, points) => sum + points, 0);
                 const day3QuotaScore = (day3TotalQuotaPoints - parseFloat(day3TargetQuota)).toFixed(1);
 
