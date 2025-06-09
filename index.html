@@ -1313,9 +1313,9 @@
                 <th class="p-2"></th>
                 <th class="p-2"></th>
                 <th class="p-2"></th>
-                ${data.handicaps.slice(0, 9).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
+                ${data.handicaps.slice(0, 9).map(h => `<th class="p-2 text-center">point ${h}</th>`).join('')}
                 <th class="p-2"></th>
-                ${data.handicaps.slice(9, 18).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
+                ${data.handicaps.slice(9, 18).map(h => `<th class="p-2 text-center">${h}</th>`).join('')}
                 <th class="p-2"></th>
                 <th class="p-2"></th>
               </tr>
@@ -1386,9 +1386,9 @@
                 <th class="p-2"></th>
                 <th class="p-2"></th>
                 <th class="p-2"></th>
-                ${data.handicaps.slice(0, 9).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
+                ${data.handicaps.slice(0, 9).map(h => `<th class="p-2 text-center">point ${h}</th>`).join('')}
                 <th class="p-2"></th>
-                ${data.handicaps.slice(9, 18).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
+                ${data.handicaps.slice(9, 18).map(h => `<th class="p-2 text-center">${h}</th>`).join('')}
                 <th class="p-2"></th>
                 <th class="p-2"></th>
                 <th class="p-2"></th>
@@ -1428,43 +1428,7 @@
                 <th class="p-2">Hole 15</th>
                 <th class="p-2">Hole 16</th>
                 <th class="p-2">Hole 17</th>
-                <th class="p-2">Hole 18</th>
-                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 22, 'number')">B9 Total</th>
-                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 23, 'number')">Total</th>
-                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 24, 'number')">Target Quota</th>
-                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 25, 'number')">Quota Score</th>
-              </tr>
-            </thead>
-            <tbody id="day3-results-quota-body">
-              ${data.players.map((row, playerIndex) => `
-                <tr class="border-t">
-                  <td class="p-2">${row.playerName}</td>
-                  <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
-                  <td class="p-2">${row.courseHandicap}</td>
-                  ${row.quotaPoints.slice(0, 9).map(points => `
-                    <td class="p-2">${points}</td>
-                  `).join('')}
-                  <td class="p-2">${row.quotaPoints.slice(0, 9).reduce((sum, points) => sum + points, 0)}</td>
-                  ${row.quotaPoints.slice(9, 18).map(points => `
-                    <td class="p-2">${points}</td>
-                  `).join('')}
-                  <td class="p-2">${row.quotaPoints.slice(9, 18).reduce((sum, points) => sum + points, 0)}</td>
-                  <td class="p-2">${row.quotaPoints.reduce((sum, points) => sum + points, 0)}</td>
-                  <td class="p-2">${row.targetQuota}</td>
-                  <td class="p-2">${row.quotaScore}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </section>
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold mb-4">Game Winners</h2>
-        <p>Placeholder for Daily Quota, Skins, Closest to Pin winners. Specify data source (e.g., 'Day3Winners!A1:C' for Game, Winner, Prize).</p>
-      </section>
-    `;
-  }
-},
+                <th class="p-2">
       'live-scoring': {
         title: '2025 Pelican Hill Extravaganza Live Scoring',
         fetchData: async () => {
