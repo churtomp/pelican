@@ -1436,7 +1436,7 @@
                 
                 // Calculate Day 2 Target Quota and Quota Score
                 const day2QuotaPointsTotal = day2QuotaPoints[playerIndex] ? day2QuotaPoints[playerIndex].reduce((sum, points) => sum + points, 0) : 0;
-                const day2TargetQuota = day1TargetQuota + (day1QuotaScore / 2);
+                const day2TargetQuota = day1TargetQuota - (day1QuotaScore / 2);
                 const day2QuotaScore = day2QuotaPointsTotal - day2TargetQuota;
                 
                 // Calculate Day 3 Target Quota and Quota Score
