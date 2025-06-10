@@ -643,9 +643,71 @@
           </table>
         </div>
       </section>
-      <section class="mb-8">
+            <section class="mb-8">
         <h2 class="text-2xl font-bold mb-4">Game Winners</h2>
-        <p>Placeholder for Daily Quota, Skins, Closest to Pin winners. Specify data source (e.g., 'Day1Winners!A1:C' for Game, Winner, Prize).</p>
+        <div class="bg-white shadow-md rounded-lg p-4">
+          <h3 class="text-xl font-semibold mb-2">Daily Quota & Closest to Pin</h3>
+          <table class="w-full text-left border-collapse mb-4">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2">Game</th>
+                <th class="p-2">Winner</th>
+                <th class="p-2">Prize</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.winners.map(row => `
+                <tr class="border-t">
+                  <td class="p-2">${row.game}</td>
+                  <td class="p-2">${row.winner}</td>
+                  <td class="p-2">${row.prize}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <h3 class="text-xl font-semibold mb-2">Skins</h3>
+          <table class="w-full text-left border-collapse mb-4">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2">Hole</th>
+                <th class="p-2">Gross Skin Winner</th>
+                <th class="p-2">Net Skin Winner</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Array.from({ length: 18 }, (_, i) => `
+                <tr class="border-t">
+                  <td class="p-2">${i + 1}</td>
+                  <td class="p-2">${grossSkins[i] !== null ? data.players[grossSkins[i]].playerName : 'No Winner'}</td>
+                  <td class="p-2">${netSkins[i] !== null ? data.players[netSkins[i]].playerName : 'No Winner'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <h3 class="text-xl font-semibold mb-2">Top 3 Quota Scores</h3>
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2">Rank</th>
+                <th class="p-2">Player</th>
+                <th class="p-2">Quota Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${[...data.players]
+                .sort((a, b) => parseFloat(b.quotaScore) - parseFloat(a.quotaScore))
+                .slice(0, 3)
+                .map((player, index) => `
+                  <tr class="border-t">
+                    <td class="p-2">${index + 1}</td>
+                    <td class="p-2">${player.playerName}</td>
+                    <td class="p-2 text-center">${player.quotaScore}</td>
+                  </tr>
+                `)
+                .join('')}
+            </tbody>
+          </table>
+        </div>
       </section>
     `;
   }
