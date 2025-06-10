@@ -1173,11 +1173,11 @@
         const holes = row.slice(3, 21).map(score => parseInt(score) || 0);
         const quotaPoints = holes.map((gross, i) => {
           const diff = gross - day3ParValues[i];
-          if (diff <= -2) return 8;
-          if (diff === -1) return 4;
-          if (diff === 0) return 2;
-          if (diff === 1) return 1;
-          return 0;
+          if (diff <= -2) return 8; // Eagle
+          if (diff === -1) return 4; // Birdie
+          if (diff === 0) return 2; // Par
+          if (diff === 1) return 1; // Bogey
+          return 0; // Double Bogey+
         });
 
         return {
@@ -1189,8 +1189,8 @@
           b9Total: parseInt(row[22]) || holes.slice(9, 18).reduce((sum, score) => sum + parseInt(score || 0), 0),
           total: parseInt(row[23]) || holes.reduce((sum, score) => sum + parseInt(score || 0), 0),
           quotaPoints,
-          targetQuota: row[24] ? parseFloat(row[24]).toFixed(1) : '0.0',
-          quotaScore: row[25] ? parseFloat(row[25]).toFixed(1) : '0.0'
+          targetQuota: row[24] ? parseFloat(row[24]).toFixed(1) : '0.0', // Column Y
+          quotaScore: row[25] ? parseFloat(row[25]).toFixed(1) : '0.0' // Column Z
         };
       }) : [];
 
@@ -1224,6 +1224,7 @@
     }
   },
   render: (data) => {
+    // Compute gross skins
     const grossSkins = Array(18).fill(null);
     for (let hole = 0; hole < 18; hole++) {
       const scores = data.players.map(player => player.holes[hole]).filter(score => score > 0);
@@ -1237,6 +1238,7 @@
       }
     }
 
+    // Compute net scores and net skins
     const netScores = data.players.map(player => {
       const strokes = data.handicaps.map(hcp => player.courseHandicap >= hcp ? 1 : 0);
       return player.holes.map((gross, i) => Math.max(0, gross - strokes[i]));
@@ -1254,6 +1256,7 @@
       }
     }
 
+    // Compute total par values for Day 3
     const f9TotalPar = data.parValues.slice(0, 9).reduce((sum, p) => sum + p, 0);
     const b9TotalPar = data.parValues.slice(9, 18).reduce((sum, p) => sum + p, 0);
     const totalPar = data.parValues.reduce((sum, p) => sum + p, 0);
@@ -1315,7 +1318,272 @@
                 <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 2, 'number')">Course Handicap</th>
                 <th class="p-2">Hole 1</th>
                 <th class="p-2">Hole 2</th>
-      'live-scoring': {
+                <th class="p-2">Hole 3</th>
+                <th class="p-2">Hole 4</th>
+                <th class="p-2">Hole 5</th>
+                <th class="p-2">Hole 6</th>
+                <th class="p-2">Hole 7</th>
+                <th class="p-2">Hole 8</th>
+                <th class="p-2">Hole 9</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 12, 'number')">F9 Total</th>
+                <th class="p-2">Hole 10</th>
+                <th class="p-2">Hole 11</th>
+                <th class="p-2">Hole 12</th>
+                <th class="p-2">Hole 13</th>
+                <th class="p-2">Hole 14</th>
+                <th class="p-2">Hole 15</th>
+                <th class="p-2">Hole 16</th>
+                <th class="p-2">Hole 17</th>
+                <th class="p-2">Hole 18</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 22, 'number')">B9 Total</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 23, 'number')">Total</th>
+              </tr>
+            </thead>
+            <tbody id="day3-results-body">
+              ${data.players.map((row, playerIndex) => `
+                <tr class="border-t">
+                  <td class="p-2">${row.playerName}</td>
+                  <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
+                  <td class="p-2">${row.courseHandicap}</td>
+                  ${row.holes.slice(0, 9).map((score, holeIndex) => `
+                    <td class="p-2 ${grossSkins[holeIndex] === playerIndex ? 'bg-green-200' : ''}">${score}</td>
+                  `).join('')}
+                  <td class="p-2">${row.f9Total}</td>
+                  ${row.holes.slice(9, 18).map((score, holeIndex) => `
+                    <td class="p-2 ${grossSkins[holeIndex + 9] === playerIndex ? 'bg-green-200' : ''}">${score}</td>
+                  `).join('')}
+                  <td class="p-2">${row.b9Total}</td>
+                  <td class="p-2">${row.total}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Net Score</h2>
+        <div id="net-score" class="bg-white shadow-md rounded-lg p-4 overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="bg-gray-300">
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                ${data.handicaps.slice(0, 9).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
+                <th class="p-2"></th>
+                ${data.handicaps.slice(9, 18).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+              </tr>
+              <tr class="bg-gray-200">
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                ${data.parValues.slice(0, 9).map(p => `<th class="p-2 text-center">Par ${p}</th>`).join('')}
+                <th class="p-2 text-center">Par ${f9TotalPar}</th>
+                ${data.parValues.slice(9, 18).map(p => `<th class="p-2 text-center">Par ${p}</th>`).join('')}
+                <th class="p-2 text-center">Par ${b9TotalPar}</th>
+                <th class="p-2 text-center">Par ${totalPar}</th>
+              </tr>
+              <tr class="bg-gray-200">
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 0, 'string')">Player Name</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 1, 'number')">Handicap Index</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 2, 'number')">Course Handicap</th>
+                <th class="p-2">Hole 1</th>
+                <th class="p-2">Hole 2</th>
+                <th class="p-2">Hole 3</th>
+                <th class="p-2">Hole 4</th>
+                <th class="p-2">Hole 5</th>
+                <th class="p-2">Hole 6</th>
+                <th class="p-2">Hole 7</th>
+                <th class="p-2">Hole 8</th>
+                <th class="p-2">Hole 9</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 12, 'number')">F9 Total</th>
+                <th class="p-2">Hole 10</th>
+                <th class="p-2">Hole 11</th>
+                <th class="p-2">Hole 12</th>
+                <th class="p-2">Hole 13</th>
+                <th class="p-2">Hole 14</th>
+                <th class="p-2">Hole 15</th>
+                <th class="p-2">Hole 16</th>
+                <th class="p-2">Hole 17</th>
+                <th class="p-2">Hole 18</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 22, 'number')">B9 Total</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 23, 'number')">Total</th>
+              </tr>
+            </thead>
+            <tbody id="day3-results-net-body">
+              ${data.players.map((row, playerIndex) => `
+                <tr class="border-t">
+                  <td class="p-2">${row.playerName}</td>
+                  <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
+                  <td class="p-2">${row.courseHandicap}</td>
+                  ${netScores[playerIndex].slice(0, 9).map((score, holeIndex) => `
+                    <td class="p-2 ${netSkins[holeIndex] === playerIndex ? 'bg-green-200' : ''}">${score}</td>
+                  `).join('')}
+                  <td class="p-2">${netScores[playerIndex].slice(0, 9).reduce((sum, score) => sum + score, 0)}</td>
+                  ${netScores[playerIndex].slice(9, 18).map((score, holeIndex) => `
+                    <td class="p-2 ${netSkins[holeIndex + 9] === playerIndex ? 'bg-green-200' : ''}">${score}</td>
+                  `).join('')}
+                  <td class="p-2">${netScores[playerIndex].slice(9, 18).reduce((sum, score) => sum + score, 0)}</td>
+                  <td class="p-2">${netScores[playerIndex].reduce((sum, score) => sum + score, 0)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Quota Points</h2>
+        <div id="quota-points" class="bg-white shadow-md rounded-lg p-4 overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="bg-gray-300">
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                ${data.handicaps.slice(0, 9).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
+                <th class="p-2"></th>
+                ${data.handicaps.slice(9, 18).map(h => `<th class="p-2 text-center">HCP ${h}</th>`).join('')}
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+              </tr>
+              <tr class="bg-gray-200">
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+                ${data.parValues.slice(0, 9).map(p => `<th class="p-2 text-center">Par ${p}</th>`).join('')}
+                <th class="p-2 text-center">Par ${f9TotalPar}</th>
+                ${data.parValues.slice(9, 18).map(p => `<th class="p-2 text-center">Par ${p}</th>`).join('')}
+                <th class="p-2 text-center">Par ${b9TotalPar}</th>
+                <th class="p-2 text-center">Par ${totalPar}</th>
+                <th class="p-2"></th>
+                <th class="p-2"></th>
+              </tr>
+              <tr class="bg-gray-200">
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 0, 'string')">Player Name</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 1, 'number')">Handicap Index</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 2, 'number')">Course Handicap</th>
+                <th class="p-2">Hole 1</th>
+                <th class="p-2">Hole 2</th>
+                <th class="p-2">Hole 3</th>
+                <th class="p-2">Hole 4</th>
+                <th class="p-2">Hole 5</th>
+                <th class="p-2">Hole 6</th>
+                <th class="p-2">Hole 7</th>
+                <th class="p-2">Hole 8</th>
+                <th class="p-2">Hole 9</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 12, 'number')">F9 Total</th>
+                <th class="p-2">Hole 10</th>
+                <th class="p-2">Hole 11</th>
+                <th class="p-2">Hole 12</th>
+                <th class="p-2">Hole 13</th>
+                <th class="p-2">Hole 14</th>
+                <th class="p-2">Hole 15</th>
+                <th class="p-2">Hole 16</th>
+                <th class="p-2">Hole 17</th>
+                <th class="p-2">Hole 18</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 22, 'number')">B9 Total</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 23, 'number')">Total</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 24, 'number')">Target Quota</th>
+                <th class="p-2 cursor-pointer" onclick="sortTable('day3-results', 25, 'number')">Quota Score</th>
+              </tr>
+            </thead>
+            <tbody id="day3-results-quota-body">
+              ${data.players.map((row, playerIndex) => `
+                <tr class="border-t">
+                  <td class="p-2">${row.playerName}</td>
+                  <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
+                  <td class="p-2">${row.courseHandicap}</td>
+                  ${row.quotaPoints.slice(0, 9).map(points => `
+                    <td class="p-2">${points}</td>
+                  `).join('')}
+                  <td class="p-2">${row.quotaPoints.slice(0, 9).reduce((sum, points) => sum + points, 0)}</td>
+                  ${row.quotaPoints.slice(9, 18).map(points => `
+                    <td class="p-2">${points}</td>
+                  `).join('')}
+                  <td class="p-2">${row.quotaPoints.slice(9, 18).reduce((sum, points) => sum + points, 0)}</td>
+                  <td class="p-2">${row.quotaPoints.reduce((sum, points) => sum + points, 0)}</td>
+                  <td class="p-2">${row.targetQuota}</td>
+                  <td class="p-2">${row.quotaScore}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Game Winners</h2>
+        <div class="bg-white shadow-md rounded-lg p-4">
+          <h3 class="text-xl font-semibold mb-2">Daily Quota & Closest to Pin</h3>
+          <table class="w-full text-left border-collapse mb-4">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2">Game</th>
+                <th class="p-2">Winner</th>
+                <th class="p-2">Prize</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.winners.map(row => `
+                <tr class="border-t">
+                  <td class="p-2">${row.game}</td>
+                  <td class="p-2">${row.winner}</td>
+                  <td class="p-2">${row.prize}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <h3 class="text-xl font-semibold mb-2">Skins</h3>
+          <table class="w-full text-left border-collapse mb-4">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2">Hole</th>
+                <th class="p-2">Gross Skin Winner</th>
+                <th class="p-2">Net Skin Winner</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Array.from({ length: 18 }, (_, i) => `
+                <tr class="border-t">
+                  <td class="p-2">${i + 1}</td>
+                  <td class="p-2">${grossSkins[i] !== null ? data.players[grossSkins[i]].playerName : 'No Winner'}</td>
+                  <td class="p-2">${netSkins[i] !== null ? data.players[netSkins[i]].playerName : 'No Winner'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <h3 class="text-xl font-semibold mb-2">Top 3 Quota Scores</h3>
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2">Rank</th>
+                <th class="p-2">Player</th>
+                <th class="p-2">Quota Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${[...data.players]
+                .sort((a, b) => parseFloat(b.quotaScore) - parseFloat(a.quotaScore))
+                .slice(0, 3)
+                .map((player, index) => `
+                  <tr class="border-t">
+                    <td class="p-2">${index + 1}</td>
+                    <td class="p-2">${player.playerName}</td>
+                    <td class="p-2 text-center">${player.quotaScore}</td>
+                  </tr>
+                `)
+                .join('')}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    `;
+  }
+},
+'live-scoring': {
   title: '2025 Pelican Hill Extravaganza Live Scoring',
   fetchData: async () => {
     try {
@@ -1360,36 +1628,37 @@
     `;
   }
 }
-    }
+    }; // Close the views object
+
     let viewData = {};
     let sortStates = {};
 
- async function loadView(view) {
-  const content = document.getElementById('content');
-  const title = document.getElementById('page-title');
-  const error = document.getElementById('error');
+    async function loadView(view) {
+      const content = document.getElementById('content');
+      const title = document.getElementById('page-title');
+      const error = document.getElementById('error');
 
-  error.classList.add('hidden');
-  content.innerHTML = 'Loading...';
+      error.classList.add('hidden');
+      content.innerHTML = 'Loading...';
 
-  try {
-    if (!views[view]) throw new Error(`View ${view} not found`);
-    if (!viewData[view] && views[view].fetchData) {
-      viewData[view] = await views[view].fetchData();
-      if (!viewData[view] || (Array.isArray(viewData[view]) && viewData[view].length === 0)) {
-        throw new Error('No data returned from API');
+      try {
+        if (!views[view]) throw new Error(`View ${view} not found`);
+        if (!viewData[view] && views[view].fetchData) {
+          viewData[view] = await views[view].fetchData();
+          if (!viewData[view] || (Array.isArray(viewData[view]) && viewData[view].length === 0)) {
+            throw new Error('No data returned from API');
+          }
+        }
+        title.textContent = views[view].title;
+        content.innerHTML = views[view].render(viewData[view] || {});
+        updateActiveMenuItem(view);
+      } catch (err) {
+        console.error('Error loading view:', err);
+        error.textContent = `Error loading ${view}: ${err.message}. Check API key, sheet permissions, or network.`;
+        error.classList.remove('hidden');
+        content.innerHTML = '';
       }
     }
-    title.textContent = views[view].title;
-    content.innerHTML = views[view].render(viewData[view] || {});
-    updateActiveMenuItem(view);
-  } catch (err) {
-    console.error('Error loading view:', err);
-    error.textContent = `Error loading ${view}: ${err.message}. Check API key, sheet permissions, or network.`;
-    error.classList.remove('hidden');
-    content.innerHTML = '';
-  }
-}
 
     function updateActiveMenuItem(view) {
       const menuItems = document.querySelectorAll('#navDropdown a');
@@ -1398,75 +1667,75 @@
       });
     }
 
-window.sortTable = function(view, column, type) {
-  if (!sortStates[view]) {
-    sortStates[view] = { column: -1, direction: 1 };
-  }
-
-  if (sortStates[view].column === column) {
-    sortStates[view].direction *= -1;
-  } else {
-    sortStates[view].column = column;
-    sortStates[view].direction = 1;
-  }
-
-  let data = viewData[view];
-  let isResultsView = view.includes('results');
-  if (isResultsView) {
-    data = data.players;
-  }
-
-  const columnMap = isResultsView ? {
-    0: 'playerName',
-    1: 'handicapIndex',
-    2: 'courseHandicap',
-    3: 'holes[0]', 4: 'holes[1]', 5: 'holes[2]', 6: 'holes[3]', 7: 'holes[4]',
-    8: 'holes[5]', 9: 'holes[6]', 10: 'holes[7]', 11: 'holes[8]',
-    12: 'f9Total',
-    13: 'holes[9]', 14: 'holes[10]', 15: 'holes[11]', 16: 'holes[12]', 17: 'holes[13]',
-    18: 'holes[14]', 19: 'holes[15]', 20: 'holes[16]', 21: 'holes[17]',
-    22: 'b9Total',
-    23: 'total',
-    24: 'targetQuota',
-    25: 'quotaScore'
-  } : null;
-
-  data.sort((a, b) => {
-    let valueA, valueB;
-    if (isResultsView) {
-      const key = columnMap[column];
-      if (key.includes('holes')) {
-        const holeIndex = parseInt(key.match(/\[(\d+)\]/)[1]);
-        valueA = a.holes[holeIndex] || 0;
-        valueB = b.holes[holeIndex] || 0;
-      } else {
-        valueA = a[key] || (type === 'number' ? 0 : '');
-        valueB = b[key] || (type === 'number' ? 0 : '');
+    window.sortTable = function(view, column, type) {
+      if (!sortStates[view]) {
+        sortStates[view] = { column: -1, direction: 1 };
       }
-    } else {
-      valueA = a[column] || (type === 'number' ? 0 : '');
-      valueB = b[column] || (type === 'number' ? 0 : '');
-    }
 
-    if (type === 'number') {
-      valueA = parseFloat(valueA);
-      valueB = parseFloat(valueB);
-      return (valueA - valueB) * sortStates[view].direction;
-    } else {
-      valueA = valueA.toString().toLowerCase();
-      valueB = valueB.toString().toLowerCase();
-      return valueA.localeCompare(valueB) * sortStates[view].direction;
-    }
-  });
+      if (sortStates[view].column === column) {
+        sortStates[view].direction *= -1;
+      } else {
+        sortStates[view].column = column;
+        sortStates[view].direction = 1;
+      }
 
-  if (isResultsView) {
-    viewData[view].players = data;
-  } else {
-    viewData[view] = data;
-  }
+      let data = viewData[view];
+      let isResultsView = view.includes('results');
+      if (isResultsView) {
+        data = data.players;
+      }
 
-  loadView(view);
-};
+      const columnMap = isResultsView ? {
+        0: 'playerName',
+        1: 'handicapIndex',
+        2: 'courseHandicap',
+        3: 'holes[0]', 4: 'holes[1]', 5: 'holes[2]', 6: 'holes[3]', 7: 'holes[4]',
+        8: 'holes[5]', 9: 'holes[6]', 10: 'holes[7]', 11: 'holes[8]',
+        12: 'f9Total',
+        13: 'holes[9]', 14: 'holes[10]', 15: 'holes[11]', 16: 'holes[12]', 17: 'holes[13]',
+        18: 'holes[14]', 19: 'holes[15]', 20: 'holes[16]', 21: 'holes[17]',
+        22: 'b9Total',
+        23: 'total',
+        24: 'targetQuota',
+        25: 'quotaScore'
+      } : null;
+
+      data.sort((a, b) => {
+        let valueA, valueB;
+        if (isResultsView) {
+          const key = columnMap[column];
+          if (key.includes('holes')) {
+            const holeIndex = parseInt(key.match(/\[(\d+)\]/)[1]);
+            valueA = a.holes[holeIndex] || 0;
+            valueB = b.holes[holeIndex] || 0;
+          } else {
+            valueA = a[key] || (type === 'number' ? 0 : '');
+            valueB = b[key] || (type === 'number' ? 0 : '');
+          }
+        } else {
+          valueA = a[column] || (type === 'number' ? 0 : '');
+          valueB = b[column] || (type === 'number' ? 0 : '');
+        }
+
+        if (type === 'number') {
+          valueA = parseFloat(valueA);
+          valueB = parseFloat(valueB);
+          return (valueA - valueB) * sortStates[view].direction;
+        } else {
+          valueA = valueA.toString().toLowerCase();
+          valueB = valueB.toString().toLowerCase();
+          return valueA.localeCompare(valueB) * sortStates[view].direction;
+        }
+      });
+
+      if (isResultsView) {
+        viewData[view].players = data;
+      } else {
+        viewData[view] = data;
+      }
+
+      loadView(view);
+    };
 
     document.getElementById('navButton').addEventListener('click', () => {
       const dropdown = document.getElementById('navDropdown');
