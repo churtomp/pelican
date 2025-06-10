@@ -254,7 +254,7 @@
           `;
         }
       },
-     'games-payouts-prizes': {
+    'games-payouts-prizes': {
   title: '2025 Pelican Hill Extravaganza Games/Payouts/Prizes',
   fetchData: async () => {
     try {
@@ -358,24 +358,50 @@
           }
         }
 
-        // Compile skins winners
-        const grossSkinsWinners = grossSkins.map((winnerIndex, hole) => winnerIndex !== null ? {
-          game: `Gross Skin Hole ${hole + 1}`,
-          winner: players[winnerIndex].playerName,
-          prize: '$10'
-        } : null).filter(w => w);
-        const netSkinsWinners = netSkins.map((winnerIndex, hole) => winnerIndex !== null ? {
-          game: `Net Skin Hole ${hole + 1}`,
-          winner: players[winnerIndex].playerName,
-          prize: '$10'
-        } : null).filter(w => w);
-
-        return { grossSkinsWinners, netSkinsWinners };
+        return { grossSkins, netSkins, players };
       };
 
-      const day1Skins = processDayScores(day1ScoresData, day1ParData, day1HandicapData, 'day1');
-      const day2Skins = processDayScores(day2ScoresData, day2ParData, day2HandicapData, 'day2');
-      const day3Skins = processDayScores(day3ScoresData, day3ParData, day3HandicapData, 'day3');
+      const day1SkinsData = processDayScores(day1ScoresData, day1ParData, day1HandicapData, 'day1');
+      const day2SkinsData = processDayScores(day2ScoresData, day2ParData, day2HandicapData, 'day2');
+      const day3SkinsData = processDayScores(day3ScoresData, day3ParData, day3HandicapData, 'day3');
+
+      // Count total skins across all days
+      const totalGrossSkins = [
+        ...day1SkinsData.grossSkins,
+        ...day2SkinsData.grossSkins,
+        ...day3SkinsData.grossSkins
+      ].filter(index => index !== null).length;
+      const totalNetSkins = [
+        ...day1SkinsData.netSkins,
+        ...day2SkinsData.netSkins,
+        ...day3SkinsData.netSkins
+      ].filter(index => index !== null).length;
+
+      // Calculate per-skin value
+      const grossSkinValue = totalGrossSkins > 0 ? (360 / totalGrossSkins).toFixed(2) : '0.00';
+      const netSkinValue = totalNetSkins > 0 ? (360 / totalNetSkins).toFixed(2) : '0.00';
+
+      // Compile skins winners with dynamic prizes
+      const compileSkinsWinners = (skins, players, skinType, value) => {
+        return skins.map((winnerIndex, hole) => winnerIndex !== null ? {
+          game: `${skinType} Skin Hole ${hole + 1}`,
+          winner: players[winnerIndex].playerName,
+          prize: `$${parseFloat(value).toFixed(2)}`
+        } : null).filter(w => w);
+      };
+
+      const day1Skins = {
+        grossSkinsWinners: compileSkinsWinners(day1SkinsData.grossSkins, day1SkinsData.players, 'Gross', grossSkinValue),
+        netSkinsWinners: compileSkinsWinners(day1SkinsData.netSkins, day1SkinsData.players, 'Net', netSkinValue)
+      };
+      const day2Skins = {
+        grossSkinsWinners: compileSkinsWinners(day2SkinsData.grossSkins, day2SkinsData.players, 'Gross', grossSkinValue),
+        netSkinsWinners: compileSkinsWinners(day2SkinsData.netSkins, day2SkinsData.players, 'Net', netSkinValue)
+      };
+      const day3Skins = {
+        grossSkinsWinners: compileSkinsWinners(day3SkinsData.grossSkins, day3SkinsData.players, 'Gross', grossSkinValue),
+        netSkinsWinners: compileSkinsWinners(day3SkinsData.netSkins, day3SkinsData.players, 'Net', netSkinValue)
+      };
 
       return {
         dailyWinners,
@@ -384,6 +410,10 @@
           day1: [...day1Skins.grossSkinsWinners, ...day1Skins.netSkinsWinners],
           day2: [...day2Skins.grossSkinsWinners, ...day2Skins.netSkinsWinners],
           day3: [...day3Skins.grossSkinsWinners, ...day3Skins.netSkinsWinners]
+        },
+        skinValues: {
+          gross: grossSkinValue,
+          net: netSkinValue
         }
       };
     } catch (error) {
@@ -391,7 +421,8 @@
       return {
         dailyWinners: { day1: [], day2: [], day3: [] },
         overallWinners: [],
-        skins: { day1: [], day2: [], day3: [] }
+        skins: { day1: [], day2: [], day3: [] },
+        skinValues: { gross: '0.00', net: '0.00' }
       };
     }
   },
@@ -422,13 +453,13 @@
               </tr>
               <tr class="border-t">
                 <td class="p-2">Daily Gross Skins (3 days)</td>
-                <td class="p-2">$10 × 3 = $30</td>
-                <td class="p-2">Per day</td>
+                <td class="p-2">$360</td>
+                <td class="p-2">Divided by total Gross Skins, ~$${data.skinValues.gross} per skin</td>
               </tr>
               <tr class="border-t">
                 <td class="p-2">Daily Net Skins (3 days)</td>
-                <td class="p-2">$10 × 3 = $30</td>
-                <td class="p-2">Per day</td>
+                <td class="p-2">$360</td>
+                <td class="p-2">Divided by total Net Skins, ~$${data.skinValues.net} per skin</td>
               </tr>
               <tr class="border-t">
                 <td class="p-2">Closest to Pin (3 days)</td>
