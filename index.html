@@ -254,39 +254,284 @@
           `;
         }
       },
-      'games-payouts-prizes': {
-        title: '2025 Pelican Hill Extravaganza Games/Payouts/Prizes',
-        fetchData: async () => {
-          return [
-            ['Net Skins', 'TBD', '$100'],
-            ['Low Net', 'TBD', '$150'],
-            ['Closest to Pin', 'TBD', 'Golf Gear Set']
-          ];
-        },
-        render: (data) => {
-          return `
-            <table class="w-full text-left">
-              <thead>
-                <tr class="bg-gray-200">
-                  <th class="p-2">Game</th>
-                  <th class="p-2">Winner</th>
-                  <th class="p-2">Payout/Prize</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${data.map(row => `
-                  <tr class="border-t">
-                    <td class="p-2">${row[0]}</td>
-                    <td class="p-2">${row[1]}</td>
-                    <td class="p-2">${row[2]}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          `;
+     'games-payouts-prizes': {
+  title: '2025 Pelican Hill Extravaganza Games/Payouts/Prizes',
+  fetchData: async () => {
+    try {
+      // Fetch winner data for daily games
+      const day1WinnersResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day1Winners!A1:C?key=${API_KEY}`);
+      const day2WinnersResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day2Winners!A1:C?key=${API_KEY}`);
+      const day3WinnersResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day3Winners!A1:C?key=${API_KEY}`);
+      const overallWinnersResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/OverallWinners!A1:C?key=${API_KEY}`);
+
+      // Fetch score data for skins calculation
+      const day1ScoresResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day1Scores!A4:X?key=${API_KEY}`);
+      const day2ScoresResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day2Scores!A4:Z?key=${API_KEY}`);
+      const day3ScoresResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day3Scores!A4:Z?key=${API_KEY}`);
+      const day1ParResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day1Scores!D1:U1?key=${API_KEY}`);
+      const day2ParResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day2Scores!D1:U1?key=${API_KEY}`);
+      const day3ParResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day3Scores!D1:U1?key=${API_KEY}`);
+      const day1HandicapResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day1Scores!A2:X2?key=${API_KEY}`);
+      const day2HandicapResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day2Scores!A2:X2?key=${API_KEY}`);
+      const day3HandicapResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day3Scores!A2:X2?key=${API_KEY}`);
+
+      const day1WinnersData = await day1WinnersResponse.json();
+      const day2WinnersData = await day2WinnersResponse.json();
+      const day3WinnersData = await day3WinnersResponse.json();
+      const overallWinnersData = await overallWinnersResponse.json();
+      const day1ScoresData = await day1ScoresResponse.json();
+      const day2ScoresData = await day2ScoresResponse.json();
+      const day3ScoresData = await day3ScoresResponse.json();
+      const day1ParData = await day1ParResponse.json();
+      const day2ParData = await day2ParResponse.json();
+      const day3ParData = await day3ParResponse.json();
+      const day1HandicapData = await day1HandicapResponse.json();
+      const day2HandicapData = await day2HandicapResponse.json();
+      const day3HandicapData = await day3HandicapResponse.json();
+
+      // Process winner data
+      const dailyWinners = {
+        day1: day1WinnersData.values ? day1WinnersData.values.slice(1).map(row => ({
+          game: row[0] || '',
+          winner: row[1] || 'TBD',
+          prize: row[2] || ''
+        })) : [],
+        day2: day2WinnersData.values ? day2WinnersData.values.slice(1).map(row => ({
+          game: row[0] || '',
+          winner: row[1] || 'TBD',
+          prize: row[2] || ''
+        })) : [],
+        day3: day3WinnersData.values ? day3WinnersData.values.slice(1).map(row => ({
+          game: row[0] || '',
+          winner: row[1] || 'TBD',
+          prize: row[2] || ''
+        })) : []
+      };
+
+      const overallWinners = overallWinnersData.values ? overallWinnersData.values.slice(1).map(row => ({
+        game: row[0] || '',
+        winner: row[1] || 'TBD',
+        prize: row[2] || ''
+      })) : [];
+
+      // Process score data for skins
+      const processDayScores = (scoresData, parData, handicapData, day) => {
+        const parValues = parData.values ? parData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5];
+        const handicaps = handicapData.values ? handicapData.values[0].slice(3, 21).map(h => parseInt(h) || 0) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+
+        const players = scoresData.values ? scoresData.values.map(row => ({
+          playerName: row[0] || '',
+          handicapIndex: parseFloat(row[1]) || 0,
+          courseHandicap: parseInt(row[2]) || 0,
+          holes: row.slice(3, 21).map(score => parseInt(score) || 0)
+        })) : [];
+
+        // Compute gross skins
+        const grossSkins = Array(18).fill(null);
+        for (let hole = 0; hole < 18; hole++) {
+          const scores = players.map(player => player.holes[hole]).filter(score => score > 0);
+          if (scores.length > 0) {
+            const minScore = Math.min(...scores);
+            const scoreCounts = scores.reduce((acc, score) => ({ ...acc, [score]: (acc[score] || 0) + 1 }), {});
+            if (scoreCounts[minScore] === 1) {
+              const winnerIndex = players.findIndex(player => player.holes[hole] === minScore);
+              grossSkins[hole] = winnerIndex;
+            }
+          }
         }
-      },
-'day1-results': {
+
+        // Compute net scores and net skins
+        const netScores = players.map(player => {
+          const strokes = handicaps.map(hcp => player.courseHandicap >= hcp ? 1 : 0);
+          return player.holes.map((gross, i) => Math.max(0, gross - strokes[i]));
+        });
+        const netSkins = Array(18).fill(null);
+        for (let hole = 0; hole < 18; hole++) {
+          const scores = netScores.map(playerScores => playerScores[hole]).filter(score => score > 0);
+          if (scores.length > 0) {
+            const minScore = Math.min(...scores);
+            const scoreCounts = scores.reduce((acc, score) => ({ ...acc, [score]: (acc[score] || 0) + 1 }), {});
+            if (scoreCounts[minScore] === 1) {
+              const winnerIndex = netScores.findIndex(playerScores => playerScores[hole] === minScore);
+              netSkins[hole] = winnerIndex;
+            }
+          }
+        }
+
+        // Compile skins winners
+        const grossSkinsWinners = grossSkins.map((winnerIndex, hole) => winnerIndex !== null ? {
+          game: `Gross Skin Hole ${hole + 1}`,
+          winner: players[winnerIndex].playerName,
+          prize: '$10'
+        } : null).filter(w => w);
+        const netSkinsWinners = netSkins.map((winnerIndex, hole) => winnerIndex !== null ? {
+          game: `Net Skin Hole ${hole + 1}`,
+          winner: players[winnerIndex].playerName,
+          prize: '$10'
+        } : null).filter(w => w);
+
+        return { grossSkinsWinners, netSkinsWinners };
+      };
+
+      const day1Skins = processDayScores(day1ScoresData, day1ParData, day1HandicapData, 'day1');
+      const day2Skins = processDayScores(day2ScoresData, day2ParData, day2HandicapData, 'day2');
+      const day3Skins = processDayScores(day3ScoresData, day3ParData, day3HandicapData, 'day3');
+
+      return {
+        dailyWinners,
+        overallWinners,
+        skins: {
+          day1: [...day1Skins.grossSkinsWinners, ...day1Skins.netSkinsWinners],
+          day2: [...day2Skins.grossSkinsWinners, ...day2Skins.netSkinsWinners],
+          day3: [...day3Skins.grossSkinsWinners, ...day3Skins.netSkinsWinners]
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching Games/Payouts/Prizes data:', error);
+      return {
+        dailyWinners: { day1: [], day2: [], day3: [] },
+        overallWinners: [],
+        skins: { day1: [], day2: [], day3: [] }
+      };
+    }
+  },
+  render: (data) => {
+    return `
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Prize Pot Breakdown</h2>
+        <p class="mb-4">Total pot: $150 per player. <em class="text-sm">Minor rounding may apply.</em></p>
+        <div class="bg-white shadow-md rounded-lg p-4">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2">Game</th>
+                <th class="p-2">Amount</th>
+                <th class="p-2">Payout Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t">
+                <td class="p-2">3-day Quota Game</td>
+                <td class="p-2">$47.50</td>
+                <td class="p-2">Pays 3 spots</td>
+              </tr>
+              <tr class="border-t">
+                <td class="p-2">Daily Quota Game (3 days)</td>
+                <td class="p-2">$11.67 × 3 = $35.01</td>
+                <td class="p-2">Pays 3 spots per day</td>
+              </tr>
+              <tr class="border-t">
+                <td class="p-2">Daily Gross Skins (3 days)</td>
+                <td class="p-2">$10 × 3 = $30</td>
+                <td class="p-2">Per day</td>
+              </tr>
+              <tr class="border-t">
+                <td class="p-2">Daily Net Skins (3 days)</td>
+                <td class="p-2">$10 × 3 = $30</td>
+                <td class="p-2">Per day</td>
+              </tr>
+              <tr class="border-t">
+                <td class="p-2">Closest to Pin (3 days)</td>
+                <td class="p-2">$2.50 × 3 = $7.50</td>
+                <td class="p-2">Per day, Allen’s chosen par 3</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Overall Winners</h2>
+        <div class="bg-white shadow-md rounded-lg p-4">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2">Game</th>
+                <th class="p-2">Winner</th>
+                <th class="p-2">Prize</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.overallWinners.map(row => `
+                <tr class="border-t">
+                  <td class="p-2">${row.game}</td>
+                  <td class="p-2">${row.winner}</td>
+                  <td class="p-2">${row.prize}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold mb-4">Daily Winners</h2>
+        <div class="bg-white shadow-md rounded-lg p-4 mb-4">
+          <h3 class="text-xl font-semibold mb-2">Day 1</h3>
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2">Game</th>
+                <th class="p-2">Winner</th>
+                <th class="p-2">Prize</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${[...data.dailyWinners.day1, ...data.skins.day1].map(row => `
+                <tr class="border-t">
+                  <td class="p-2">${row.game}</td>
+                  <td class="p-2">${row.winner}</td>
+                  <td class="p-2">${row.prize}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="bg-white shadow-md rounded-lg p-4 mb-4">
+          <h3 class="text-xl font-semibold mb-2">Day 2</h3>
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2">Game</th>
+                <th class="p-2">Winner</th>
+                <th class="p-2">Prize</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${[...data.dailyWinners.day2, ...data.skins.day2].map(row => `
+                <tr class="border-t">
+                  <td class="p-2">${row.game}</td>
+                  <td class="p-2">${row.winner}</td>
+                  <td class="p-2">${row.prize}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="bg-white shadow-md rounded-lg p-4">
+          <h3 class="text-xl font-semibold mb-2">Day 3</h3>
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2">Game</th>
+                <th class="p-2">Winner</th>
+                <th class="p-2">Prize</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${[...data.dailyWinners.day3, ...data.skins.day3].map(row => `
+                <tr class="border-t">
+                  <td class="p-2">${row.game}</td>
+                  <td class="p-2">${row.winner}</td>
+                  <td class="p-2">${row.prize}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    `;
+  }
+},
+      'day1-results': {
   title: '2025 Pelican Hill Extravaganza Day 1 Results',
   fetchData: async () => {
     try {
