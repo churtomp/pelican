@@ -1519,26 +1519,32 @@
     let viewData = {};
     let sortStates = {};
 
-    async function loadView(view) {
-      const content = document.getElementById('content');
-      const title = document.getElementById('page-title');
-      const error = document.getElementById('error');
+   async function loadView(view) {
+  const content = document.getElementById('content');
+  const title = document.getElementById('page-title');
+  const error = document.getElementById('error');
 
-      error.classList.add('hidden');
-      content.innerHTML = 'Loading...';
+  error.classList.add('hidden');
+  content.innerHTML = 'Loading...';
 
-      try {
-        if (!viewData[view] && views[view].fetchData) {
-          viewData[view] = await views[view].fetchData();
-        }
-        title.textContent = views[view].title;
-        content.innerHTML = views[view].render(viewData[view] || {});
-        updateActiveMenuItem(view);
-      } catch (err) {
-        console.error('Error loading view:', err);
-        error.classList.remove('hidden');
+  try {
+    if (!views[view]) throw new Error(`View ${view} not found`);
+    if (!viewData[view] && views[view].fetchData) {
+      viewData[view] = await views[view].fetchData();
+      if (!viewData[view] || (Array.isArray(viewData[view]) && viewData[view].length === 0)) {
+        throw new Error('No data returned from API');
       }
     }
+    title.textContent = views[view].title;
+    content.innerHTML = views[view].render(viewData[view] || {});
+    updateActiveMenuItem(view);
+  } catch (err) {
+    console.error('Error loading view:', err);
+    error.textContent = `Error loading ${view}: ${err.message}. Check API key, sheet permissions, or network.`;
+    error.classList.remove('hidden');
+    content.innerHTML = '';
+  }
+}
 
     function updateActiveMenuItem(view) {
       const menuItems = document.querySelectorAll('#navDropdown a');
