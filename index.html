@@ -294,11 +294,13 @@
       const handicapResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day1Scores!A2:X2?key=${API_KEY}`);
       const parResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day1Scores!D1:U1?key=${API_KEY}`);
       const courseInfoResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day1Scores!A3:D3?key=${API_KEY}`);
-      
+      const winnersResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Day1Winners!A1:C?key=${API_KEY}`);
+
       const data = await response.json();
       const handicapData = await handicapResponse.json();
       const parData = await parResponse.json();
       const courseInfoData = await courseInfoResponse.json();
+      const winnersData = await winnersResponse.json();
 
       const parValues = parData.values ? parData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5];
 
@@ -331,6 +333,12 @@
         };
       }) : [];
 
+      const winners = winnersData.values ? winnersData.values.slice(1).map(row => ({
+        game: row[0] || '',
+        winner: row[1] || 'TBD',
+        prize: row[2] || ''
+      })) : [];
+
       return {
         players,
         handicaps: handicapData.values ? handicapData.values[0].slice(3, 21).map(h => parseInt(h) || 0) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
@@ -340,7 +348,8 @@
           teesPlayed: courseInfoData.values[0][3] || 'Blue',
           rating: parseFloat(courseInfoData.values[0][1]) || 72.5,
           slope: parseInt(courseInfoData.values[0][2]) || 135
-        } : { courseName: 'Pelican Hill - Ocean North', teesPlayed: 'Blue', rating: 72.5, slope: 135 }
+        } : { courseName: 'Pelican Hill - Ocean North', teesPlayed: 'Blue', rating: 72.5, slope: 135 },
+        winners
       };
     } catch (error) {
       console.error('Error fetching Day 1 data:', error);
@@ -348,7 +357,8 @@
         players: [],
         handicaps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
         parValues: [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5],
-        courseInfo: { courseName: 'Pelican Hill - Ocean North', teesPlayed: 'Blue', rating: 72.5, slope: 135 }
+        courseInfo: { courseName: 'Pelican Hill - Ocean North', teesPlayed: 'Blue', rating: 72.5, slope: 135 },
+        winners: []
       };
     }
   },
@@ -643,7 +653,7 @@
           </table>
         </div>
       </section>
-            <section class="mb-8">
+      <section class="mb-8">
         <h2 class="text-2xl font-bold mb-4">Game Winners</h2>
         <div class="bg-white shadow-md rounded-lg p-4">
           <h3 class="text-xl font-semibold mb-2">Daily Quota & Closest to Pin</h3>
