@@ -286,7 +286,7 @@
           `;
         }
       },
-     'day1-results': {
+'day1-results': {
   title: '2025 Pelican Hill Extravaganza Day 1 Results',
   fetchData: async () => {
     try {
@@ -300,18 +300,41 @@
       const parData = await parResponse.json();
       const courseInfoData = await courseInfoResponse.json();
 
-      return {
-        players: data.values ? data.values.map(row => ({
+      const parValues = parData.values ? parData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5];
+
+      const players = data.values ? data.values.map(row => {
+        const holes = row.slice(3, 21).map(score => parseInt(score) || 0);
+        const quotaPoints = holes.map((gross, i) => {
+          const diff = gross - parValues[i];
+          if (diff <= -2) return 8; // Eagle
+          if (diff === -1) return 4; // Birdie
+          if (diff === 0) return 2; // Par
+          if (diff === 1) return 1; // Bogey
+          return 0; // Double Bogey+
+        });
+        const totalQuotaPoints = quotaPoints.reduce((sum, points) => sum + points, 0);
+        const handicapIndex = parseFloat(row[1]) || 0;
+        const targetQuota = (36 - handicapIndex).toFixed(1);
+        const quotaScore = (totalQuotaPoints - parseFloat(targetQuota)).toFixed(1);
+
+        return {
           playerName: row[0] || '',
-          handicapIndex: parseFloat(row[1]) || 0,
+          handicapIndex,
           courseHandicap: parseInt(row[2]) || 0,
-          holes: row.slice(3, 21).map(score => parseInt(score) || 0),
-          f9Total: parseInt(row[21]) || row.slice(3, 12).reduce((sum, score) => sum + parseInt(score || 0), 0),
-          b9Total: parseInt(row[22]) || row.slice(12, 21).reduce((sum, score) => sum + parseInt(score || 0), 0),
-          total: parseInt(row[23]) || row.slice(3, 21).reduce((sum, score) => sum + parseInt(score || 0), 0)
-        })) : [],
+          holes,
+          f9Total: parseInt(row[21]) || holes.slice(0, 9).reduce((sum, score) => sum + parseInt(score || 0), 0),
+          b9Total: parseInt(row[22]) || holes.slice(9, 18).reduce((sum, score) => sum + parseInt(score || 0), 0),
+          total: parseInt(row[23]) || holes.reduce((sum, score) => sum + parseInt(score || 0), 0),
+          quotaPoints,
+          targetQuota,
+          quotaScore
+        };
+      }) : [];
+
+      return {
+        players,
         handicaps: handicapData.values ? handicapData.values[0].slice(3, 21).map(h => parseInt(h) || 0) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-        parValues: parData.values ? parData.values[0].map(p => parseInt(p) || 4) : [4, 4, 3, 5, 4, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5],
+        parValues,
         courseInfo: courseInfoData.values ? {
           courseName: courseInfoData.values[0][0] || 'Pelican Hill - Ocean North',
           teesPlayed: courseInfoData.values[0][3] || 'Blue',
@@ -366,18 +389,6 @@
     const f9TotalPar = data.parValues.slice(0, 9).reduce((sum, p) => sum + p, 0);
     const b9TotalPar = data.parValues.slice(9, 18).reduce((sum, p) => sum + p, 0);
     const totalPar = data.parValues.reduce((sum, p) => sum + p, 0);
-
-    // Compute quota points
-    const quotaPoints = data.players.map(player => {
-      return player.holes.map((gross, i) => {
-        const diff = gross - data.parValues[i];
-        if (diff <= -2) return 8; // Eagle
-        if (diff === -1) return 4; // Birdie
-        if (diff === 0) return 2; // Par
-        if (diff === 1) return 1; // Bogey
-        return 0; // Double Bogey+
-      });
-    });
 
     return `
       <section class="mb-8">
@@ -610,29 +621,24 @@
               </tr>
             </thead>
             <tbody id="day1-results-quota-body">
-              ${data.players.map((row, playerIndex) => {
-                const targetQuota = (36 - row.handicapIndex).toFixed(1);
-                const totalQuotaPoints = quotaPoints[playerIndex].reduce((sum, points) => sum + points, 0);
-                const quotaScore = (totalQuotaPoints - parseFloat(targetQuota)).toFixed(1);
-                return `
-                  <tr class="border-t">
-                    <td class="p-2">${row.playerName}</td>
-                    <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
-                    <td class="p-2">${row.courseHandicap}</td>
-                    ${quotaPoints[playerIndex].slice(0, 9).map(points => `
-                      <td class="p-2">${points}</td>
-                    `).join('')}
-                    <td class="p-2">${quotaPoints[playerIndex].slice(0, 9).reduce((sum, points) => sum + points, 0)}</td>
-                    ${quotaPoints[playerIndex].slice(9, 18).map(points => `
-                      <td class="p-2">${points}</td>
-                    `).join('')}
-                    <td class="p-2">${quotaPoints[playerIndex].slice(9, 18).reduce((sum, points) => sum + points, 0)}</td>
-                    <td class="p-2">${totalQuotaPoints}</td>
-                    <td class="p-2">${targetQuota}</td>
-                    <td class="p-2">${quotaScore}</td>
-                  </tr>
-                `;
-              }).join('')}
+              ${data.players.map((row, playerIndex) => `
+                <tr class="border-t">
+                  <td class="p-2">${row.playerName}</td>
+                  <td class="p-2">${row.handicapIndex.toFixed(1)}</td>
+                  <td class="p-2">${row.courseHandicap}</td>
+                  ${row.quotaPoints.slice(0, 9).map(points => `
+                    <td class="p-2">${points}</td>
+                  `).join('')}
+                  <td class="p-2">${row.quotaPoints.slice(0, 9).reduce((sum, points) => sum + points, 0)}</td>
+                  ${row.quotaPoints.slice(9, 18).map(points => `
+                    <td class="p-2">${points}</td>
+                  `).join('')}
+                  <td class="p-2">${row.quotaPoints.slice(9, 18).reduce((sum, points) => sum + points, 0)}</td>
+                  <td class="p-2">${row.quotaPoints.reduce((sum, points) => sum + points, 0)}</td>
+                  <td class="p-2">${row.targetQuota}</td>
+                  <td class="p-2">${row.quotaScore}</td>
+                </tr>
+              `).join('')}
             </tbody>
           </table>
         </div>
