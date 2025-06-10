@@ -1541,46 +1541,75 @@
       });
     }
 
-    window.sortTable = function(view, column, type) {
-      if (!sortStates[view]) {
-        sortStates[view] = { column: -1, direction: 1 };
-      }
+window.sortTable = function(view, column, type) {
+  if (!sortStates[view]) {
+    sortStates[view] = { column: -1, direction: 1 };
+  }
 
-      if (sortStates[view].column === column) {
-        sortStates[view].direction *= -1;
+  if (sortStates[view].column === column) {
+    sortStates[view].direction *= -1;
+  } else {
+    sortStates[view].column = column;
+    sortStates[view].direction = 1;
+  }
+
+  let data = viewData[view];
+  let isResultsView = view.includes('results');
+  if (isResultsView) {
+    data = data.players;
+  }
+
+  const columnMap = isResultsView ? {
+    0: 'playerName',
+    1: 'handicapIndex',
+    2: 'courseHandicap',
+    3: 'holes[0]', 4: 'holes[1]', 5: 'holes[2]', 6: 'holes[3]', 7: 'holes[4]',
+    8: 'holes[5]', 9: 'holes[6]', 10: 'holes[7]', 11: 'holes[8]',
+    12: 'f9Total',
+    13: 'holes[9]', 14: 'holes[10]', 15: 'holes[11]', 16: 'holes[12]', 17: 'holes[13]',
+    18: 'holes[14]', 19: 'holes[15]', 20: 'holes[16]', 21: 'holes[17]',
+    22: 'b9Total',
+    23: 'total',
+    24: 'targetQuota',
+    25: 'quotaScore'
+  } : null;
+
+  data.sort((a, b) => {
+    let valueA, valueB;
+    if (isResultsView) {
+      const key = columnMap[column];
+      if (key.includes('holes')) {
+        const holeIndex = parseInt(key.match(/\[(\d+)\]/)[1]);
+        valueA = a.holes[holeIndex] || 0;
+        valueB = b.holes[holeIndex] || 0;
       } else {
-        sortStates[view].column = column;
-        sortStates[view].direction = 1;
+        valueA = a[key] || (type === 'number' ? 0 : '');
+        valueB = b[key] || (type === 'number' ? 0 : '');
       }
+    } else {
+      valueA = a[column] || (type === 'number' ? 0 : '');
+      valueB = b[column] || (type === 'number' ? 0 : '');
+    }
 
-      let data = viewData[view];
-      if (view.includes('results')) {
-        data = data.players;
-      }
+    if (type === 'number') {
+      valueA = parseFloat(valueA);
+      valueB = parseFloat(valueB);
+      return (valueA - valueB) * sortStates[view].direction;
+    } else {
+      valueA = valueA.toString().toLowerCase();
+      valueB = valueB.toString().toLowerCase();
+      return valueA.localeCompare(valueB) * sortStates[view].direction;
+    }
+  });
 
-      data.sort((a, b) => {
-        let valueA = view.includes('results') ? a[Object.keys(a)[column]] : a[column] || '';
-        let valueB = view.includes('results') ? b[Object.keys(b)[column]] : b[column] || '';
+  if (isResultsView) {
+    viewData[view].players = data;
+  } else {
+    viewData[view] = data;
+  }
 
-        if (type === 'number') {
-          valueA = parseFloat(valueA) || 0;
-          valueB = parseFloat(valueB) || 0;
-          return (valueA - valueB) * sortStates[view].direction;
-        } else {
-          valueA = valueA.toString().toLowerCase();
-          valueB = valueB.toString().toLowerCase();
-          return valueA.localeCompare(valueB) * sortStates[view].direction;
-        }
-      });
-
-      if (view.includes('results')) {
-        viewData[view].players = data;
-      } else {
-        viewData[view] = data;
-      }
-
-      loadView(view);
-    };
+  loadView(view);
+};
 
     document.getElementById('navButton').addEventListener('click', () => {
       const dropdown = document.getElementById('navDropdown');
